@@ -1,0 +1,52 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* { box-sizing: border-box; padding: 0; margin: 0; }
+html, body {
+  max-width: 100vw;
+  overflow-x: hidden;
+  font-family: 'Poppins', sans-serif;
+  scroll-behavior: smooth;
+}
+
+@layer components {
+  .btn-primary   { @apply bg-brand-pink hover:bg-brand-pink-dark text-white font-semibold py-3 px-8 rounded-full transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 inline-block text-center; }
+  .btn-outline   { @apply border-2 border-white text-white hover:bg-white hover:text-brand-navy font-semibold py-3 px-8 rounded-full transition-all duration-300 inline-block text-center; }
+  .btn-navy      { @apply bg-brand-navy hover:bg-brand-navy-light text-white font-semibold py-3 px-8 rounded-full transition-all duration-300 shadow-lg inline-block text-center; }
+  .section-title { @apply text-3xl md:text-4xl font-bold text-brand-navy; }
+  .card          { @apply bg-white rounded-2xl shadow-lg overflow-hidden; }
+  .input-field   { @apply w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-pink focus:border-transparent transition-all text-sm; }
+  .badge-pending   { @apply bg-yellow-100 text-yellow-800 text-xs font-semibold px-3 py-1 rounded-full; }
+  .badge-confirmed { @apply bg-green-100 text-green-800 text-xs font-semibold px-3 py-1 rounded-full; }
+  .badge-completed { @apply bg-blue-100 text-blue-800 text-xs font-semibold px-3 py-1 rounded-full; }
+  .badge-cancelled { @apply bg-red-100 text-red-800 text-xs font-semibold px-3 py-1 rounded-full; }
+  .badge-cash      { @apply bg-orange-100 text-orange-800 text-xs font-semibold px-3 py-1 rounded-full; }
+}
+
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #f1f1f1; }
+::-webkit-scrollbar-thumb { background: #E91E8C; border-radius: 3px; }
+
+.hero-gradient { background: linear-gradient(135deg, #111B30 0%, #1B2A4A 40%, #2D4470 100%); }
+.pink-glow { box-shadow: 0 0 30px rgba(233,30,140,0.3); }
+.step-line { background: linear-gradient(to right, #E91E8C, #84CC16); }
+.court-card { transition: transform 0.3s ease, box-shadow 0.3s ease; }
+.court-card:hover { transform: translateY(-4px); box-shadow: 0 20px 40px rgba(0,0,0,0.15); }
+.nav-link { position: relative; }
+.nav-link::after { content: ''; position: absolute; bottom: -2px; left: 0; width: 0; height: 2px; background: #E91E8C; transition: width 0.3s ease; }
+.nav-link:hover::after { width: 100%; }
+.time-slot { @apply border border-gray-200 rounded-xl py-2 px-3 text-sm text-center cursor-pointer transition-all; }
+.time-slot:hover:not(.booked):not(.selected) { border-color: #E91E8C; background: #FFD6EC; color: #E91E8C; }
+.time-slot.selected { background: #E91E8C; color: white; border-color: #E91E8C; }
+.time-slot.booked { background: #f3f4f6; color: #9ca3af; cursor: not-allowed; text-decoration: line-through; }
+
+/* datepicker overrides */
+.react-datepicker-wrapper { width: 100%; }
+.react-datepicker__input-container input { width: 100%; padding: 12px 16px; border: 1px solid #d1d5db; border-radius: 12px; font-family: 'Poppins', sans-serif; font-size: 14px; outline: none; cursor: pointer; }
+.react-datepicker__input-container input:focus { border-color: #E91E8C; box-shadow: 0 0 0 2px rgba(233,30,140,0.2); }
+.react-datepicker__header { background-color: #1B2A4A !important; border-bottom: none; }
+.react-datepicker__current-month, .react-datepicker__day-name { color: white !important; }
+.react-datepicker__day--selected { background-color: #E91E8C !important; border-radius: 50%; }
+.react-datepicker__day:hover { background-color: #FFD6EC !important; color: #1B2A4A !important; border-radius: 50%; }
+.react-datepicker__navigation-icon::before { border-color: white !important; }

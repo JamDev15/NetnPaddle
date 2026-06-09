@@ -1,0 +1,34 @@
+[
+  {
+    "id": "court-a",
+    "name": "Court A",
+    "type": "Indoor Standard",
+    "pricePerHour": 200,
+    "description": "Full-sized indoor pickleball court with professional flooring, great lighting, and climate control.",
+    "features": ["Professional flooring", "LED lighting", "Climate controlled", "Seating area"]
+  },
+  {
+    "id": "court-b",
+    "name": "Court B",
+    "type": "Indoor Standard",
+    "pricePerHour": 200,
+    "description": "Another full-sized indoor court — perfect for tournaments or group sessions.",
+    "features": ["Professional flooring", "LED lighting", "Climate controlled", "Seating area"]
+  },
+  {
+    "id": "court-c",
+    "name": "Court C",
+    "type": "Indoor Premium",
+    "pricePerHour": 280,
+    "description": "Premium court with cushioned sports flooring, enhanced lighting, and private lounge.",
+    "features": ["Cushioned sports floor", "Enhanced lighting", "Private lounge", "Equipment storage"]
+  },
+  {
+    "id": "court-d",
+    "name": "Court D",
+    "type": "Outdoor",
+    "pricePerHour": 150,
+    "description": "Open-air court for players who love the breeze. Best for morning or evening sessions.",
+    "features": ["Open-air design", "Natural lighting", "Shaded spectator area", "Parking nearby"]
+  }
+]

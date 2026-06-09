@@ -1,0 +1,28 @@
+# Python
+backend/venv/
+backend/__pycache__/
+backend/routers/__pycache__/
+*.pyc
+*.pyo
+.env
+
+# Node / React
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+node_modules/
+package-lock.json
+
+# macOS metadata
+._*
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Old data directory (duplicate)
+/data/
+
+# IDE
+.vscode/
+.idea/
+node_modules

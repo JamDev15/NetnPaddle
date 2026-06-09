@@ -67,7 +67,7 @@ export default function Payment() {
 
                 <div className="grid grid-cols-2 gap-4 mb-6">
                   {[
-                    { id: 'gcash', icon: '💙', label: 'GCash', sub: 'Online payment' },
+                    { id: 'gcash', icon: '📱', label: 'InstaPay / QR', sub: 'GCash, Maya, any bank' },
                     { id: 'cash', icon: '💵', label: 'Cash', sub: 'Pay at venue' },
                   ].map((m) => (
                     <button key={m.id} onClick={() => setMethod(m.id)}
@@ -87,25 +87,40 @@ export default function Payment() {
                 </div>
 
                 {method === 'gcash' && (
-                  <div className="bg-blue-50 rounded-2xl p-5 space-y-4">
-                    <h3 className="font-bold text-blue-800">GCash Payment Instructions</h3>
-                    <ol className="text-sm text-blue-700 space-y-2 list-decimal list-inside">
-                      <li>Open your GCash app</li>
-                      <li>Send <strong>₱{booking.totalAmount?.toLocaleString()}</strong> to:</li>
+                  <div className="bg-cyan-50 rounded-2xl p-5 space-y-4 border border-cyan-200">
+                    <h3 className="font-bold text-cyan-800">InstaPay / GoTyme Bank</h3>
+                    <ol className="text-sm text-cyan-700 space-y-1.5 list-decimal list-inside">
+                      <li>Open your banking app (GCash, Maya, any bank)</li>
+                      <li>Tap <strong>Send Money → Scan QR</strong></li>
+                      <li>Scan the QR code below</li>
+                      <li>Enter amount: <strong className="text-brand-pink text-base">₱{booking.totalAmount?.toLocaleString()}</strong></li>
+                      <li>Complete the transfer and copy your <strong>Reference Number</strong></li>
                     </ol>
-                    <div className="bg-white rounded-xl p-4 text-center border-2 border-blue-200">
-                      <p className="text-xs text-gray-500 mb-1">GCash Number</p>
-                      <p className="text-3xl font-black text-blue-600 tracking-widest">0970 377 8990</p>
-                      <p className="text-xs text-gray-500 mt-1">Net N&apos; Paddle</p>
+
+                    {/* QR Code */}
+                    <div className="bg-white rounded-2xl p-4 flex flex-col items-center border-2 border-cyan-200">
+                      <img src="/payment-qr.png" alt="InstaPay QR Code"
+                        className="w-52 h-52 object-contain rounded-xl"
+                        onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'block' }} />
+                      <div style={{ display: 'none' }} className="w-52 h-52 bg-gray-100 rounded-xl flex items-center justify-center text-gray-400 text-sm text-center p-4">
+                        Save QR image as<br /><code className="font-mono text-xs">frontend/public/payment-qr.png</code>
+                      </div>
+                      <div className="mt-3 text-center">
+                        <p className="font-black text-brand-navy text-sm">FELBEN CARLO RIMANDO</p>
+                        <p className="text-xs text-gray-500">GoTyme Bank · ••••••• 9528</p>
+                        <div className="flex items-center justify-center gap-1 mt-1">
+                          <span className="text-blue-600 font-bold text-xs">insta</span>
+                          <span className="text-red-500 font-bold text-xs">Pay</span>
+                          <span className="text-gray-400 text-xs">· Transfer fees may apply</span>
+                        </div>
+                      </div>
                     </div>
-                    <ol className="text-sm text-blue-700 space-y-2 list-decimal list-inside" start={3}>
-                      <li>Copy your <strong>Reference Number</strong> from GCash</li>
-                      <li>Enter it below and click Confirm</li>
-                    </ol>
+
                     <div>
-                      <label className="block text-sm font-semibold text-blue-800 mb-2">GCash Reference Number *</label>
+                      <label className="block text-sm font-semibold text-cyan-800 mb-2">Reference Number *</label>
                       <input value={gcashRef} onChange={(e) => setGcashRef(e.target.value)}
                         placeholder="e.g. 1234567890123" className="input-field bg-white" />
+                      <p className="text-xs text-cyan-600 mt-1">Enter the reference number from your bank app after sending payment</p>
                     </div>
                   </div>
                 )}
@@ -124,7 +139,7 @@ export default function Payment() {
 
                 <button onClick={handleSubmit} disabled={loading}
                   className="w-full mt-6 bg-brand-pink hover:bg-brand-pink-dark disabled:bg-gray-300 text-white font-bold py-4 rounded-2xl transition-colors text-lg">
-                  {loading ? 'Processing...' : method === 'gcash' ? 'Confirm Booking & Payment' : 'Confirm Booking (Cash)'}
+                  {loading ? 'Processing...' : method === 'gcash' ? 'Confirm Booking & InstaPay' : 'Confirm Booking (Cash)'}
                 </button>
               </div>
             </div>

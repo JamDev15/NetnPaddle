@@ -4,8 +4,11 @@ import uuid
 from datetime import datetime
 from typing import Optional
 
-from fastapi import APIRouter, Depends, Header, HTTPException
+from fastapi import APIRouter, Depends, File, Header, HTTPException, UploadFile
 from pydantic import BaseModel
+
+UPLOADS_DIR = os.path.join(os.path.dirname(__file__), "..", "uploads")
+os.makedirs(UPLOADS_DIR, exist_ok=True)
 
 router = APIRouter()
 
@@ -157,3 +160,25 @@ def cancel_booking(booking_id: str, admin: bool = Depends(require_admin)):
     bookings[idx]["updatedAt"] = datetime.now().isoformat()
     _write(bookings)
     return {"message": "Booking cancelled"}
+
+
+@router.post("/{booking_id}/screenshot")
+async def upload_screenshot(booking_id: str, file: UploadFile = File(...)):
+    bookings = _read()
+    idx = next((i for i, b in enumerate(bookings) if b["id"] == booking_id), None)
+    if idx is None:
+        raise HTTPException(status_code=404, detail="Booking not found")
+
+    ext = os.path.splitext(file.filename or "screenshot.jpg")[1] or ".jpg"
+    filename = f"{booking_id}{ext}"
+    filepath = os.path.join(UPLOADS_DIR, filename)
+
+    content = await file.read()
+    with open(filepath, "wb") as f:
+        f.write(content)
+
+    bookings[idx]["screenshotPath"] = f"/uploads/{filename}"
+    bookings[idx]["updatedAt"] = datetime.now().isoformat()
+    _write(bookings)
+
+    return {"screenshotPath": f"/uploads/{filename}"}

@@ -237,7 +237,7 @@ export default function AdminDashboard() {
                 <table className="w-full text-sm">
                   <thead className="bg-gray-50 text-gray-500 uppercase text-xs">
                     <tr>
-                      {['Reference', 'Customer', 'Court', 'Date & Time', 'Amount', 'Payment', 'Status', 'Actions'].map((h) => (
+                      {['Reference', 'Customer', 'Court', 'Date & Time', 'Amount', 'Payment', 'Proof', 'Status', 'Actions'].map((h) => (
                         <th key={h} className="text-left py-3 px-4">{h}</th>
                       ))}
                     </tr>
@@ -264,6 +264,16 @@ export default function AdminDashboard() {
                           <span className={`text-xs font-semibold px-2 py-1 rounded-full ${b.paymentMethod === 'gcash' ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700'}`}>
                             {b.paymentMethod === 'gcash' ? '💙 GCash' : '💵 Cash'}
                           </span>
+                        </td>
+                        <td className="py-3 px-4">
+                          {b.screenshotPath ? (
+                            <a href={b.screenshotPath} target="_blank" rel="noopener noreferrer">
+                              <img src={b.screenshotPath} alt="proof"
+                                className="w-10 h-10 object-cover rounded-lg border border-gray-200 hover:scale-110 transition-transform cursor-zoom-in" />
+                            </a>
+                          ) : (
+                            <span className="text-gray-300 text-xs">—</span>
+                          )}
                         </td>
                         <td className="py-3 px-4">
                           <span className={STATUS[b.status]?.cls || 'badge-pending'}>{STATUS[b.status]?.label || b.status}</span>
@@ -357,6 +367,30 @@ export default function AdminDashboard() {
                   </div>
                 ))}
               </div>
+
+              {/* Payment Screenshot */}
+              {selected.screenshotPath && (
+                <div className="border-t pt-4">
+                  <h4 className="font-bold text-gray-500 text-xs uppercase tracking-widest mb-3">Payment Screenshot</h4>
+                  <a href={selected.screenshotPath} target="_blank" rel="noopener noreferrer">
+                    <img
+                      src={selected.screenshotPath}
+                      alt="Payment proof"
+                      className="w-full rounded-2xl border border-gray-200 hover:opacity-90 transition-opacity cursor-zoom-in"
+                    />
+                  </a>
+                  <p className="text-xs text-gray-400 mt-2 text-center">Click image to open full size</p>
+                </div>
+              )}
+
+              {!selected.screenshotPath && (
+                <div className="border-t pt-4">
+                  <h4 className="font-bold text-gray-500 text-xs uppercase tracking-widest mb-2">Payment Screenshot</h4>
+                  <div className="bg-gray-50 rounded-xl p-4 text-center text-gray-400 text-sm">
+                    No screenshot uploaded yet
+                  </div>
+                </div>
+              )}
 
               {selected.notes && (
                 <div className="border-t pt-4">

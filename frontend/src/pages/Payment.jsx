@@ -18,7 +18,24 @@ export default function Payment() {
   const navigate = useNavigate()
   const [booking, setBooking] = useState(null)
   const [gcashRef, setGcashRef] = useState('')
+  const [screenshot, setScreenshot] = useState(null)
+  const [preview, setPreview] = useState(null)
   const [loading, setLoading] = useState(false)
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0]
+    if (!file) return
+    setScreenshot(file)
+    setPreview(URL.createObjectURL(file))
+  }
+
+  const handleDrop = (e) => {
+    e.preventDefault()
+    const file = e.dataTransfer.files[0]
+    if (!file) return
+    setScreenshot(file)
+    setPreview(URL.createObjectURL(file))
+  }
 
   useEffect(() => {
     document.title = "Payment — Net N' Paddle"
@@ -28,14 +45,24 @@ export default function Payment() {
   }, [navigate])
 
   const handleSubmit = async () => {
-    if (!gcashRef.trim()) return toast.error('Please enter your reference number after paying')
+    if (!screenshot) return toast.error('Please upload your payment screenshot')
     setLoading(true)
     try {
+      // Step 1: create booking
       const created = await api.post('/bookings/', {
         ...booking,
         paymentMethod: 'instapay',
         gcashReference: gcashRef,
       })
+
+      // Step 2: upload screenshot
+      const formData = new FormData()
+      formData.append('file', screenshot)
+      await fetch(`/api/bookings/${created.id}/screenshot`, {
+        method: 'POST',
+        body: formData,
+      })
+
       sessionStorage.removeItem('pendingBooking')
       sessionStorage.setItem('confirmedBooking', JSON.stringify(created))
       navigate('/booking-success')
@@ -122,29 +149,69 @@ export default function Payment() {
                   </div>
                 </div>
 
-                {/* Reference Input */}
-                <div className="mb-6">
+                {/* Reference Number */}
+                <div className="mb-5">
                   <label className="block text-sm font-bold text-brand-navy mb-2">
-                    Reference Number <span className="text-brand-pink">*</span>
+                    Reference Number (optional)
                   </label>
                   <input
                     value={gcashRef}
                     onChange={(e) => setGcashRef(e.target.value)}
                     placeholder="e.g. 1234567890123"
-                    className="input-field text-base"
+                    className="input-field"
                   />
+                </div>
+
+                {/* Screenshot Upload */}
+                <div className="mb-6">
+                  <label className="block text-sm font-bold text-brand-navy mb-2">
+                    Upload Payment Screenshot <span className="text-brand-pink">*</span>
+                  </label>
+
+                  {!preview ? (
+                    <label
+                      onDrop={handleDrop}
+                      onDragOver={(e) => e.preventDefault()}
+                      className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed border-brand-pink/40 rounded-2xl bg-brand-pink/5 hover:bg-brand-pink/10 cursor-pointer transition-colors"
+                    >
+                      <input type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
+                      <div className="text-center px-4">
+                        <div className="text-4xl mb-2">📸</div>
+                        <p className="text-sm font-semibold text-brand-navy">Tap to upload screenshot</p>
+                        <p className="text-xs text-gray-400 mt-1">or drag and drop here</p>
+                        <p className="text-xs text-gray-400">JPG, PNG, HEIC accepted</p>
+                      </div>
+                    </label>
+                  ) : (
+                    <div className="relative rounded-2xl overflow-hidden border-2 border-brand-lime">
+                      <img src={preview} alt="Payment screenshot" className="w-full max-h-64 object-contain bg-gray-50" />
+                      <button
+                        type="button"
+                        onClick={() => { setScreenshot(null); setPreview(null) }}
+                        className="absolute top-2 right-2 w-8 h-8 bg-red-500 text-white rounded-full flex items-center justify-center text-lg font-bold hover:bg-red-600 transition-colors shadow"
+                      >
+                        ×
+                      </button>
+                      <div className="bg-brand-lime/20 py-2 px-4 flex items-center gap-2">
+                        <svg className="w-4 h-4 text-brand-lime-dark" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                        </svg>
+                        <span className="text-xs font-semibold text-brand-lime-dark">Screenshot ready to upload</span>
+                      </div>
+                    </div>
+                  )}
                   <p className="text-xs text-gray-400 mt-2">
-                    Enter the reference number shown in your bank app after the transfer
+                    Take a screenshot of your payment confirmation and upload it here
                   </p>
                 </div>
 
                 {/* Confirm Button */}
                 <button
                   onClick={handleSubmit}
-                  disabled={loading || !gcashRef.trim()}
+                  disabled={loading || !screenshot}
                   className="w-full bg-brand-pink hover:bg-brand-pink-dark disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-bold py-4 rounded-2xl transition-colors text-lg shadow-lg"
                 >
-                  {loading ? 'Processing...' : 'Confirm Booking & Payment'}
+                  {loading ? 'Uploading & Confirming...' : 'Confirm Booking & Submit Payment'}
                 </button>
 
                 <div className="flex items-center justify-center gap-2 mt-4 text-gray-400 text-xs">

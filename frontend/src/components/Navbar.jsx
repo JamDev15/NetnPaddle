@@ -28,9 +28,7 @@ export default function Navbar() {
         <div className="flex items-center justify-between h-16 md:h-20">
 
           <Link to="/" className="flex items-center gap-2 group">
-            <div className="w-10 h-10 rounded-full bg-brand-pink flex items-center justify-center text-white font-black text-sm group-hover:scale-110 transition-transform">
-              N²P
-            </div>
+            <img src="/logo.jpg" alt="Net N' Paddle" className="w-10 h-10 rounded-full object-cover group-hover:scale-110 transition-transform shadow" />
             <div className="hidden sm:block">
               <p className="text-white font-bold text-lg leading-tight">NET N&apos; PADDLE</p>
               <p className="text-brand-lime text-xs font-medium tracking-wider">JUST DINK IT!</p>

@@ -5,11 +5,11 @@ import toast from 'react-hot-toast'
 import { api } from '../../utils/api'
 
 const STATUS = {
-  pending:      { label: 'Pending GCash', cls: 'badge-pending' },
-  pending_cash: { label: 'Pending Cash',  cls: 'badge-cash' },
-  confirmed:    { label: 'Confirmed',     cls: 'badge-confirmed' },
-  completed:    { label: 'Completed',     cls: 'badge-completed' },
-  cancelled:    { label: 'Cancelled',     cls: 'badge-cancelled' },
+  pending:      { label: 'Pending Payment', cls: 'badge-pending' },
+  pending_cash: { label: 'Pending Cash',    cls: 'badge-cash' },
+  confirmed:    { label: 'Confirmed',       cls: 'badge-confirmed' },
+  completed:    { label: 'Completed',       cls: 'badge-completed' },
+  cancelled:    { label: 'Cancelled',       cls: 'badge-cancelled' },
 }
 
 function fmtTime(t) {
@@ -261,8 +261,8 @@ export default function AdminDashboard() {
                         </td>
                         <td className="py-3 px-4 font-bold text-brand-navy">₱{b.totalAmount?.toLocaleString()}</td>
                         <td className="py-3 px-4">
-                          <span className={`text-xs font-semibold px-2 py-1 rounded-full ${b.paymentMethod === 'gcash' ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700'}`}>
-                            {b.paymentMethod === 'gcash' ? '💙 GCash' : '💵 Cash'}
+                          <span className="text-xs font-semibold px-2 py-1 rounded-full bg-cyan-100 text-cyan-700">
+                            GoTyme InstaPay
                           </span>
                         </td>
                         <td className="py-3 px-4">
@@ -357,7 +357,7 @@ export default function AdminDashboard() {
               <div className="border-t pt-4">
                 <h4 className="font-bold text-gray-500 text-xs uppercase tracking-widest mb-3">Payment</h4>
                 {[
-                  ['Method', selected.paymentMethod === 'gcash' ? 'GCash' : 'Cash'],
+                  ['Method', 'GoTyme Bank InstaPay'],
                   ...(selected.gcashReference ? [['GCash Ref', selected.gcashReference]] : []),
                   ['Booked', selected.createdAt ? format(new Date(selected.createdAt), 'MMM d, yyyy · h:mm a') : ''],
                 ].map(([l, v]) => (

@@ -19,10 +19,9 @@ function timeLabel(h) {
 }
 
 const GRAD = {
-  'court-a': 'from-brand-pink to-brand-pink-dark',
-  'court-b': 'from-brand-navy to-brand-navy-light',
-  'court-c': 'from-purple-600 to-purple-800',
-  'court-d': 'from-brand-lime-dark to-green-600',
+  'court-1': 'from-brand-pink to-brand-pink-dark',
+  'court-2': 'from-brand-navy to-brand-navy-light',
+  'court-3': 'from-brand-lime-dark to-green-600',
 }
 
 export default function Booking() {

@@ -4,16 +4,45 @@ import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 
 const COURTS = [
-  { id: 'court-1', name: 'Court 1', type: 'Outdoor', price: 250, emoji: '☀️',
+  { id: 'court-1', name: 'Court 1', type: 'Outdoor', price: 250,
     features: ['Outdoor court', 'Professional surface', 'Natural lighting', 'Shaded area'],
     grad: 'from-brand-pink to-brand-pink-dark' },
-  { id: 'court-2', name: 'Court 2', type: 'Outdoor', price: 250, emoji: '🏓',
+  { id: 'court-2', name: 'Court 2', type: 'Outdoor', price: 250,
     features: ['Outdoor court', 'Professional surface', 'Natural lighting', 'Spectator area'],
     grad: 'from-brand-navy to-brand-navy-light' },
-  { id: 'court-3', name: 'Court 3', type: 'Outdoor', price: 250, emoji: '🌿',
+  { id: 'court-3', name: 'Court 3', type: 'Outdoor', price: 250,
     features: ['Outdoor court', 'Professional surface', 'Natural lighting', 'Parking nearby'],
     grad: 'from-brand-lime-dark to-green-600' },
 ]
+
+function PickleballIcon() {
+  return (
+    <svg viewBox="0 0 100 100" className="w-20 h-20 drop-shadow-lg">
+      {/* Paddle face */}
+      <ellipse cx="54" cy="36" rx="26" ry="30" fill="white" opacity="0.92" />
+      {/* Paddle face grid lines */}
+      <line x1="54" y1="8" x2="54" y2="64" stroke="rgba(0,0,0,0.08)" strokeWidth="1.5" />
+      <line x1="30" y1="36" x2="78" y2="36" stroke="rgba(0,0,0,0.08)" strokeWidth="1.5" />
+      <line x1="35" y1="20" x2="73" y2="20" stroke="rgba(0,0,0,0.06)" strokeWidth="1" />
+      <line x1="35" y1="52" x2="73" y2="52" stroke="rgba(0,0,0,0.06)" strokeWidth="1" />
+      <line x1="42" y1="12" x2="42" y2="62" stroke="rgba(0,0,0,0.06)" strokeWidth="1" />
+      <line x1="66" y1="12" x2="66" y2="62" stroke="rgba(0,0,0,0.06)" strokeWidth="1" />
+      {/* Paddle outline */}
+      <ellipse cx="54" cy="36" rx="26" ry="30" fill="none" stroke="white" strokeWidth="2" opacity="0.5" />
+      {/* Handle */}
+      <rect x="49" y="63" width="10" height="26" rx="5" fill="white" opacity="0.75" />
+      <rect x="51" y="65" width="6" height="22" rx="3" fill="rgba(0,0,0,0.08)" />
+      {/* Ball */}
+      <circle cx="24" cy="72" r="14" fill="#E8FF40" />
+      <circle cx="24" cy="72" r="14" fill="none" stroke="rgba(0,0,0,0.1)" strokeWidth="1" />
+      {[[-4,-6],[2,-8],[7,-3],[8,4],[3,9],[-4,8],[-8,2],[-7,-4]].map(([dx,dy],i) => (
+        <circle key={i} cx={24+dx} cy={72+dy} r="2.2" fill="rgba(80,100,0,0.35)" />
+      ))}
+      {/* Ball shine */}
+      <ellipse cx="19" cy="66" rx="4" ry="2.5" fill="white" opacity="0.35" transform="rotate(-30,19,66)" />
+    </svg>
+  )
+}
 
 const STEPS = [
   { n: '01', title: 'Choose Your Court', desc: "Browse 3 outdoor courts and pick the one that fits your game." },
@@ -168,7 +197,7 @@ export default function Home() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {COURTS.map((c) => (
               <div key={c.id} className="card court-card group">
-                <div className={`h-36 bg-gradient-to-br ${c.grad} flex items-center justify-center text-6xl`}>{c.emoji}</div>
+                <div className={`h-36 bg-gradient-to-br ${c.grad} flex items-center justify-center`}><PickleballIcon /></div>
                 <div className="p-5">
                   <div className="flex justify-between items-start mb-3">
                     <div>

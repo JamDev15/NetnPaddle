@@ -168,13 +168,59 @@ export default function Home() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               {[
-                { bg: 'bg-brand-pink', text: 'text-white', emoji: '☀️', title: 'Outdoor Courts', sub: 'Open Air' },
-                { bg: 'bg-brand-lime', text: 'text-brand-navy', emoji: '🏓', title: '3 Courts', sub: 'Always Available' },
-                { bg: 'bg-brand-navy', text: 'text-white', emoji: '₱', title: '₱250/hour', sub: 'Flat Rate' },
-                { bg: 'bg-brand-pink-light', text: 'text-brand-navy', emoji: '🎯', title: 'All Levels', sub: 'Beginner to Pro' },
+                {
+                  bg: 'bg-brand-pink', text: 'text-white', title: 'Outdoor Courts', sub: 'Open Air',
+                  icon: (
+                    <svg viewBox="0 0 44 44" className="w-11 h-11">
+                      <circle cx="22" cy="22" r="8" fill="white" opacity="0.95"/>
+                      {[[22,4,22,11],[22,33,22,40],[4,22,11,22],[33,22,40,22],[9,9,14,14],[30,30,35,35],[35,9,30,14],[9,35,14,30]].map(([x1,y1,x2,y2],i)=>(
+                        <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke="white" strokeWidth="2.8" strokeLinecap="round" opacity="0.85"/>
+                      ))}
+                    </svg>
+                  )
+                },
+                {
+                  bg: 'bg-brand-lime', text: 'text-brand-navy', title: '3 Courts', sub: 'Always Available',
+                  icon: (
+                    <svg viewBox="0 0 44 44" className="w-11 h-11">
+                      <rect x="4" y="9" width="36" height="26" rx="3" fill="none" stroke="#1B2A4A" strokeWidth="2.5"/>
+                      <line x1="22" y1="9" x2="22" y2="35" stroke="#1B2A4A" strokeWidth="2.5"/>
+                      <line x1="4" y1="22" x2="40" y2="22" stroke="#1B2A4A" strokeWidth="1.8" strokeDasharray="3 2"/>
+                      <circle cx="33" cy="14" r="4.5" fill="#1B2A4A" opacity="0.55"/>
+                      <circle cx="33" cy="14" r="4.5" fill="none" stroke="#1B2A4A" strokeWidth="1" opacity="0.4"/>
+                      {[[-2,-2],[2,-3],[4,1],[2,4],[-2,3],[-4,0]].map(([dx,dy],i)=>(
+                        <circle key={i} cx={33+dx} cy={14+dy} r="0.9" fill="#1B2A4A" opacity="0.5"/>
+                      ))}
+                    </svg>
+                  )
+                },
+                {
+                  bg: 'bg-brand-navy', text: 'text-white', title: '₱250/hour', sub: 'Flat Rate',
+                  icon: (
+                    <svg viewBox="0 0 44 44" className="w-11 h-11">
+                      <rect x="8" y="6" width="28" height="32" rx="5" fill="none" stroke="white" strokeWidth="2.5" opacity="0.9"/>
+                      <line x1="14" y1="17" x2="30" y2="17" stroke="white" strokeWidth="2" strokeLinecap="round" opacity="0.6"/>
+                      <line x1="14" y1="22" x2="30" y2="22" stroke="white" strokeWidth="2" strokeLinecap="round" opacity="0.6"/>
+                      <line x1="14" y1="27" x2="24" y2="27" stroke="white" strokeWidth="2" strokeLinecap="round" opacity="0.6"/>
+                      <circle cx="32" cy="32" r="6" fill="#84CC16"/>
+                      <text x="32" y="36" textAnchor="middle" fill="white" fontSize="8" fontWeight="bold">₱</text>
+                    </svg>
+                  )
+                },
+                {
+                  bg: 'bg-brand-pink-light', text: 'text-brand-navy', title: 'All Levels', sub: 'Beginner to Pro',
+                  icon: (
+                    <svg viewBox="0 0 44 44" className="w-11 h-11">
+                      <rect x="4" y="28" width="9" height="12" rx="2" fill="#1B2A4A" opacity="0.55"/>
+                      <rect x="17" y="19" width="10" height="21" rx="2" fill="#1B2A4A" opacity="0.8"/>
+                      <rect x="31" y="24" width="9" height="16" rx="2" fill="#1B2A4A" opacity="0.55"/>
+                      <polygon points="22,5 23.8,10.5 29.5,10.5 24.9,13.7 26.6,19.2 22,16 17.4,19.2 19.1,13.7 14.5,10.5 20.2,10.5" fill="#1B2A4A" opacity="0.85"/>
+                    </svg>
+                  )
+                },
               ].map((c) => (
                 <div key={c.title} className={`${c.bg} rounded-3xl p-6 flex flex-col justify-between aspect-square`}>
-                  <span className="text-4xl">{c.emoji}</span>
+                  {c.icon}
                   <div>
                     <p className={`${c.text} font-bold text-lg leading-tight`}>{c.title}</p>
                     <p className={`${c.text} opacity-70 text-sm`}>{c.sub}</p>

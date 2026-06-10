@@ -13,7 +13,8 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from database import get_db
 from models import Booking
 
-UPLOADS_DIR = os.path.join(os.path.dirname(__file__), "..", "uploads")
+_base_dir = "/data" if os.path.isdir("/data") else os.path.join(os.path.dirname(__file__), "..")
+UPLOADS_DIR = os.path.join(_base_dir, "uploads")
 os.makedirs(UPLOADS_DIR, exist_ok=True)
 
 router = APIRouter()

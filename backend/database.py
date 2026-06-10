@@ -2,7 +2,8 @@ import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 
-DB_PATH = os.path.join(os.path.dirname(__file__), "data", "netpaddle.db")
+_data_dir = "/data" if os.path.isdir("/data") else os.path.join(os.path.dirname(__file__), "data")
+DB_PATH = os.path.join(_data_dir, "netpaddle.db")
 DATABASE_URL = f"sqlite:///{DB_PATH}"
 
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})

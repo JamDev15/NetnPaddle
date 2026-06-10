@@ -4,24 +4,21 @@ import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 
 const COURTS = [
-  { id: 'court-a', name: 'Court A', type: 'Indoor Standard', price: 200, emoji: '🏓',
-    features: ['Professional flooring', 'LED lighting', 'Climate controlled', 'Seating area'],
+  { id: 'court-1', name: 'Court 1', type: 'Outdoor', price: 250, emoji: '☀️',
+    features: ['Outdoor court', 'Professional surface', 'Natural lighting', 'Shaded area'],
     grad: 'from-brand-pink to-brand-pink-dark' },
-  { id: 'court-b', name: 'Court B', type: 'Indoor Standard', price: 200, emoji: '🏓',
-    features: ['Professional flooring', 'LED lighting', 'Climate controlled', 'Seating area'],
+  { id: 'court-2', name: 'Court 2', type: 'Outdoor', price: 250, emoji: '🏓',
+    features: ['Outdoor court', 'Professional surface', 'Natural lighting', 'Spectator area'],
     grad: 'from-brand-navy to-brand-navy-light' },
-  { id: 'court-c', name: 'Court C', type: 'Indoor Premium', price: 280, emoji: '⭐',
-    features: ['Cushioned sports floor', 'Enhanced lighting', 'Private lounge', 'Equipment storage'],
-    grad: 'from-purple-600 to-purple-800' },
-  { id: 'court-d', name: 'Court D', type: 'Outdoor', price: 150, emoji: '☀️',
-    features: ['Open-air design', 'Natural lighting', 'Shaded spectator area', 'Parking nearby'],
+  { id: 'court-3', name: 'Court 3', type: 'Outdoor', price: 250, emoji: '🌿',
+    features: ['Outdoor court', 'Professional surface', 'Natural lighting', 'Parking nearby'],
     grad: 'from-brand-lime-dark to-green-600' },
 ]
 
 const STEPS = [
-  { n: '01', title: 'Choose Your Court', desc: "Browse 4 courts — indoor, premium, or outdoor — and pick the one that fits your game." },
+  { n: '01', title: 'Choose Your Court', desc: "Browse 3 outdoor courts and pick the one that fits your game." },
   { n: '02', title: 'Pick Date & Time', desc: "Select your preferred date and available slot. We're open 6 AM–11 PM every day." },
-  { n: '03', title: 'Pay & Confirm', desc: "Pay via GCash or cash at the venue. Receive instant confirmation with a reference number." },
+  { n: '03', title: 'Pay & Confirm', desc: "Pay via GoTyme Bank InstaPay and upload your screenshot. Get instant confirmation." },
 ]
 
 export default function Home() {
@@ -49,7 +46,7 @@ export default function Home() {
             </h1>
             <p className="text-2xl md:text-3xl font-bold text-brand-lime mb-6">Just Dink It! 🏓</p>
             <p className="text-white/70 text-lg leading-relaxed mb-10 max-w-lg">
-              Suaybaguio District&apos;s premier pickleball destination. 4 pro-quality courts, open daily
+              Suaybaguio District&apos;s premier pickleball destination. 3 outdoor courts, open daily
               6 AM–11 PM. Book online in minutes.
             </p>
             <div className="flex flex-wrap gap-4">
@@ -58,7 +55,7 @@ export default function Home() {
             </div>
 
             <div className="flex flex-wrap gap-8 mt-12 pt-12 border-t border-white/10">
-              {[['4', 'Courts'], ['7', 'Days/Week'], ['17hrs', 'Daily'], ['₱150+', 'Per Hour']].map(([v, l]) => (
+              {[['3', 'Courts'], ['7', 'Days/Week'], ['17hrs', 'Daily'], ['₱250', 'Per Hour']].map(([v, l]) => (
                 <div key={l}>
                   <p className="text-3xl font-black text-brand-pink">{v}</p>
                   <p className="text-white/60 text-sm">{l}</p>
@@ -76,7 +73,7 @@ export default function Home() {
                 </div>
               </div>
               <div className="absolute -top-4 -right-4 bg-brand-navy rounded-2xl shadow-xl p-4 text-white text-center">
-                <p className="text-2xl font-black text-brand-lime">4</p>
+                <p className="text-2xl font-black text-brand-lime">3</p>
                 <p className="text-xs">Courts</p>
               </div>
               <div className="absolute -bottom-4 -left-4 bg-white rounded-2xl shadow-xl p-4 text-center">
@@ -123,9 +120,9 @@ export default function Home() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               {[
-                { bg: 'bg-brand-pink', text: 'text-white', emoji: '🏓', title: 'Indoor Courts', sub: 'Climate Controlled' },
-                { bg: 'bg-brand-lime', text: 'text-brand-navy', emoji: '☀️', title: 'Outdoor Court', sub: 'Open Air' },
-                { bg: 'bg-brand-navy', text: 'text-white', emoji: '⭐', title: 'Premium Court', sub: 'Cushioned Floor' },
+                { bg: 'bg-brand-pink', text: 'text-white', emoji: '☀️', title: 'Outdoor Courts', sub: 'Open Air' },
+                { bg: 'bg-brand-lime', text: 'text-brand-navy', emoji: '🏓', title: '3 Courts', sub: 'Always Available' },
+                { bg: 'bg-brand-navy', text: 'text-white', emoji: '₱', title: '₱250/hour', sub: 'Flat Rate' },
                 { bg: 'bg-brand-pink-light', text: 'text-brand-navy', emoji: '🎯', title: 'All Levels', sub: 'Beginner to Pro' },
               ].map((c) => (
                 <div key={c.title} className={`${c.bg} rounded-3xl p-6 flex flex-col justify-between aspect-square`}>
@@ -147,7 +144,7 @@ export default function Home() {
           <div className="text-center mb-14">
             <span className="text-brand-pink font-semibold text-sm uppercase tracking-widest">Our Courts</span>
             <h2 className="section-title mt-2">Choose Your Court</h2>
-            <p className="text-gray-500 mt-3 text-lg">4 courts to suit every style of play</p>
+            <p className="text-gray-500 mt-3 text-lg">3 outdoor courts to suit every style of play</p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {COURTS.map((c) => (

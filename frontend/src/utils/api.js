@@ -1,4 +1,11 @@
 const BASE = (import.meta.env.VITE_API_URL || '') + '/api'
+export const UPLOADS_BASE = import.meta.env.VITE_API_URL || ''
+
+export function imgUrl(path) {
+  if (!path) return null
+  if (path.startsWith('http')) return path
+  return UPLOADS_BASE + path
+}
 
 function adminHeaders() {
   const token = localStorage.getItem('adminToken')

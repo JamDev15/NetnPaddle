@@ -4,7 +4,7 @@ import { format } from 'date-fns'
 import toast from 'react-hot-toast'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
-import { api } from '../utils/api'
+import { api, UPLOADS_BASE } from '../utils/api'
 
 function fmtTime(t) {
   if (!t) return '—'
@@ -58,7 +58,7 @@ export default function Payment() {
       // Step 2: upload screenshot
       const formData = new FormData()
       formData.append('file', screenshot)
-      await fetch(`/api/bookings/${created.id}/screenshot`, {
+      await fetch(`${UPLOADS_BASE}/api/bookings/${created.id}/screenshot`, {
         method: 'POST',
         body: formData,
       })

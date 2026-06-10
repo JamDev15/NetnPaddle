@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { format } from 'date-fns'
 import toast from 'react-hot-toast'
-import { api } from '../../utils/api'
+import { api, imgUrl } from '../../utils/api'
 
 const STATUS = {
   pending:      { label: 'Pending Payment', cls: 'badge-pending' },
@@ -347,9 +347,9 @@ export default function AdminDashboard() {
                             </td>
                             <td className="py-3 px-4 font-black text-brand-navy">₱{b.totalAmount?.toLocaleString()}</td>
                             <td className="py-3 px-4">
-                              {b.screenshotPath ? (
-                                <a href={b.screenshotPath} target="_blank" rel="noopener noreferrer">
-                                  <img src={b.screenshotPath} alt="proof" className="w-10 h-10 object-cover rounded-lg border border-gray-200 hover:scale-110 transition-transform cursor-zoom-in" />
+                              {imgUrl(b.screenshotPath) ? (
+                                <a href={imgUrl(b.screenshotPath)} target="_blank" rel="noopener noreferrer">
+                                  <img src={imgUrl(b.screenshotPath)} alt="proof" className="w-10 h-10 object-cover rounded-lg border border-gray-200 hover:scale-110 transition-transform cursor-zoom-in" />
                                 </a>
                               ) : <span className="text-gray-300 text-xs">—</span>}
                             </td>
@@ -438,9 +438,9 @@ export default function AdminDashboard() {
                           </div>
                         </div>
 
-                        {b.screenshotPath ? (
-                          <a href={b.screenshotPath} target="_blank" rel="noopener noreferrer">
-                            <img src={b.screenshotPath} alt="Payment proof"
+                        {imgUrl(b.screenshotPath) ? (
+                          <a href={imgUrl(b.screenshotPath)} target="_blank" rel="noopener noreferrer">
+                            <img src={imgUrl(b.screenshotPath)} alt="Payment proof"
                               className="w-full h-32 object-cover rounded-xl border border-gray-200 hover:opacity-90 transition-opacity cursor-zoom-in mb-4" />
                           </a>
                         ) : (
@@ -610,10 +610,10 @@ export default function AdminDashboard() {
 
               <div className="border-t pt-4">
                 <h4 className="font-bold text-gray-400 text-xs uppercase tracking-widest mb-3">Payment Screenshot</h4>
-                {selected.screenshotPath ? (
+                {imgUrl(selected.screenshotPath) ? (
                   <>
-                    <a href={selected.screenshotPath} target="_blank" rel="noopener noreferrer">
-                      <img src={selected.screenshotPath} alt="Payment proof" className="w-full rounded-2xl border border-gray-200 hover:opacity-90 transition-opacity cursor-zoom-in" />
+                    <a href={imgUrl(selected.screenshotPath)} target="_blank" rel="noopener noreferrer">
+                      <img src={imgUrl(selected.screenshotPath)} alt="Payment proof" className="w-full rounded-2xl border border-gray-200 hover:opacity-90 transition-opacity cursor-zoom-in" />
                     </a>
                     <p className="text-xs text-gray-400 mt-2 text-center">Click to open full size</p>
                   </>

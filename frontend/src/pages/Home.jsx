@@ -68,8 +68,27 @@ export default function Home() {
             <div className="relative">
               <div className="w-64 h-64 md:w-80 md:h-80 rounded-full bg-gradient-to-br from-brand-pink via-brand-pink-light to-white flex items-center justify-center shadow-2xl pink-glow animate-float">
                 <div className="text-center">
-                  <div className="text-8xl md:text-9xl">🎾</div>
-                  <p className="text-brand-navy font-black text-lg mt-2">PICKLEBALL</p>
+                  <svg viewBox="0 0 200 200" className="w-40 h-40 md:w-48 md:h-48 drop-shadow-xl">
+                    <defs>
+                      <radialGradient id="ballGrad" cx="38%" cy="35%" r="65%">
+                        <stop offset="0%" stopColor="#F0FF60" />
+                        <stop offset="60%" stopColor="#C8E600" />
+                        <stop offset="100%" stopColor="#84A800" />
+                      </radialGradient>
+                    </defs>
+                    <circle cx="100" cy="100" r="96" fill="url(#ballGrad)" />
+                    <circle cx="100" cy="100" r="96" fill="none" stroke="#7A9600" strokeWidth="1.5" opacity="0.4" />
+                    {/* Holes */}
+                    {[
+                      [100,38],[130,48],[152,68],[158,100],[148,130],[128,152],[100,160],[72,152],[52,130],[42,100],[48,68],[70,48],
+                      [100,65],[122,72],[136,92],[132,116],[116,132],[94,136],[74,126],[62,108],[66,84],[82,70],
+                      [100,88],[114,96],[116,112],[104,120],[90,116],[84,104],[88,92],
+                    ].map(([cx, cy], i) => (
+                      <circle key={i} cx={cx} cy={cy} r="5.5" fill="#6B8A00" opacity="0.55" />
+                    ))}
+                    <ellipse cx="78" cy="72" rx="22" ry="14" fill="white" opacity="0.15" transform="rotate(-35,78,72)" />
+                  </svg>
+                  <p className="text-brand-navy font-black text-lg mt-1">PICKLEBALL</p>
                 </div>
               </div>
               <div className="absolute -top-4 -right-4 bg-brand-navy rounded-2xl shadow-xl p-4 text-white text-center">

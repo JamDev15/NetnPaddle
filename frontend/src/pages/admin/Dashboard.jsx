@@ -20,6 +20,11 @@ function fmtTime(t) {
   return `${d}:00 ${ap}`
 }
 
+function StatusBadge({ status }) {
+  const s = STATUS[status] || { label: status, cls: 'badge-pending' }
+  return <span className={s.cls}>{s.label}</span>
+}
+
 export default function AdminDashboard() {
   const navigate = useNavigate()
   const [bookings, setBookings] = useState([])
@@ -86,8 +91,14 @@ export default function AdminDashboard() {
     total: bookings.length,
     today: bookings.filter((b) => b.date === today && b.status !== 'cancelled').length,
     pending: bookings.filter((b) => ['pending', 'pending_cash'].includes(b.status)).length,
+    confirmed: bookings.filter((b) => b.status === 'confirmed').length,
     revenue: bookings.filter((b) => ['confirmed', 'completed'].includes(b.status)).reduce((s, b) => s + (b.totalAmount || 0), 0),
   }
+
+  const todayBookings = bookings.filter((b) => b.date === today && b.status !== 'cancelled')
+    .sort((a, b) => a.timeStart?.localeCompare(b.timeStart))
+
+  const pendingBookings = bookings.filter((b) => ['pending', 'pending_cash'].includes(b.status))
 
   const filtered = bookings.filter((b) => {
     const okStatus = filterStatus === 'all' || b.status === filterStatus
@@ -96,34 +107,40 @@ export default function AdminDashboard() {
     return okStatus && okSearch
   })
 
-  const displayed = section === 'today' ? filtered.filter((b) => b.date === today)
-    : section === 'pending' ? filtered.filter((b) => ['pending', 'pending_cash'].includes(b.status))
-    : filtered
-
   const navItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: '📊' },
-    { id: 'bookings', label: 'All Bookings', icon: '📋' },
-    { id: 'pending', label: 'Pending', icon: '⏳', badge: stats.pending },
-    { id: 'today', label: "Today's", icon: '📅' },
-  ]
-
-  const statCards = [
-    { label: 'Total Bookings', value: stats.total, icon: '📋', color: 'bg-brand-navy' },
-    { label: "Today's Sessions", value: stats.today, icon: '📅', color: 'bg-brand-pink' },
-    { label: 'Pending', value: stats.pending, icon: '⏳', color: 'bg-yellow-500' },
-    { label: 'Revenue', value: `₱${stats.revenue.toLocaleString()}`, icon: '💰', color: 'bg-brand-lime-dark' },
+    { id: 'dashboard', label: 'Dashboard', icon: (
+      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h4a1 1 0 011 1v5a1 1 0 01-1 1H5a1 1 0 01-1-1V5zm10 0a1 1 0 011-1h4a1 1 0 011 1v2a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zm10-3a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1h-4a1 1 0 01-1-1v-7z" />
+      </svg>
+    )},
+    { id: 'bookings', label: 'All Bookings', icon: (
+      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+      </svg>
+    )},
+    { id: 'pending', label: 'Pending', icon: (
+      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+    ), badge: stats.pending },
+    { id: 'today', label: "Today's Schedule", icon: (
+      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+      </svg>
+    )},
   ]
 
   return (
     <div className="flex h-screen bg-gray-100 overflow-hidden">
       {/* Sidebar */}
-      <aside className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 fixed lg:static inset-y-0 left-0 z-50 w-64 bg-brand-navy-dark flex flex-col transition-transform duration-300`}>
+      <aside className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 fixed lg:static inset-y-0 left-0 z-50 w-64 bg-brand-navy flex flex-col transition-transform duration-300`}
+        style={{ background: 'linear-gradient(160deg, #0f1c30 0%, #1B2A4A 100%)' }}>
         <div className="p-6 border-b border-white/10">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-brand-pink flex items-center justify-center text-white font-black text-sm">N²P</div>
+            <img src="/logo.jpg" alt="logo" className="w-10 h-10 rounded-full object-cover" onError={(e) => { e.target.style.display='none' }} />
             <div>
-              <p className="text-white font-bold text-sm">NET N&apos; PADDLE</p>
-              <p className="text-brand-lime text-xs">Admin Panel</p>
+              <p className="text-white font-black text-sm tracking-wide">NET N' PADDLE</p>
+              <p className="text-brand-lime text-xs font-medium">Admin Panel</p>
             </div>
           </div>
         </div>
@@ -132,9 +149,11 @@ export default function AdminDashboard() {
           {navItems.map((item) => (
             <button key={item.id} onClick={() => { setSection(item.id); setSidebarOpen(false) }}
               className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium transition-all ${
-                section === item.id ? 'bg-brand-pink text-white' : 'text-white/60 hover:text-white hover:bg-white/10'
+                section === item.id
+                  ? 'bg-brand-pink text-white shadow-lg'
+                  : 'text-white/60 hover:text-white hover:bg-white/10'
               }`}>
-              <span className="flex items-center gap-3"><span>{item.icon}</span>{item.label}</span>
+              <span className="flex items-center gap-3">{item.icon}{item.label}</span>
               {item.badge > 0 && (
                 <span className="bg-yellow-400 text-yellow-900 text-xs font-bold px-2 py-0.5 rounded-full">{item.badge}</span>
               )}
@@ -142,173 +161,398 @@ export default function AdminDashboard() {
           ))}
         </nav>
 
-        <div className="p-4 border-t border-white/10">
+        <div className="p-4 border-t border-white/10 space-y-1">
           <a href="/" target="_blank" rel="noreferrer"
-            className="flex items-center gap-2 text-white/60 hover:text-white text-sm py-2 px-3 rounded-lg hover:bg-white/10 transition-colors mb-2">
-            🌐 View Website
+            className="flex items-center gap-2 text-white/50 hover:text-white text-sm py-2 px-3 rounded-lg hover:bg-white/10 transition-colors">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+            View Website
           </a>
           <button onClick={handleLogout}
             className="w-full flex items-center gap-2 text-red-400 hover:text-red-300 text-sm py-2 px-3 rounded-lg hover:bg-red-500/10 transition-colors">
-            🚪 Log Out
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+            Log Out
           </button>
         </div>
       </aside>
 
       {sidebarOpen && <div className="fixed inset-0 bg-black/50 z-40 lg:hidden" onClick={() => setSidebarOpen(false)} />}
 
-      {/* Main */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
         <header className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <button onClick={() => setSidebarOpen(true)} className="lg:hidden text-gray-500">
-              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
+              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
             </button>
             <div>
-              <h1 className="font-bold text-brand-navy text-lg capitalize">
-                {section === 'dashboard' ? 'Dashboard Overview' : section === 'pending' ? 'Pending Bookings' : section === 'today' ? "Today's Bookings" : 'All Bookings'}
+              <h1 className="font-black text-brand-navy text-xl">
+                {section === 'dashboard' ? 'Overview' : section === 'pending' ? 'Pending Approvals' : section === 'today' ? "Today's Schedule" : 'All Bookings'}
               </h1>
               <p className="text-gray-400 text-xs">{format(new Date(), 'EEEE, MMMM d, yyyy')}</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
             {stats.pending > 0 && (
-              <span className="bg-yellow-100 text-yellow-800 text-xs font-semibold px-3 py-1.5 rounded-full animate-pulse">
-                {stats.pending} pending
+              <span className="bg-yellow-100 text-yellow-800 text-xs font-bold px-3 py-1.5 rounded-full animate-pulse">
+                {stats.pending} need review
               </span>
             )}
-            <button onClick={fetchBookings} title="Refresh" className="text-gray-400 hover:text-brand-pink transition-colors">
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
+            <button onClick={fetchBookings} className="p-2 text-gray-400 hover:text-brand-pink hover:bg-pink-50 rounded-xl transition-colors" title="Refresh">
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
             </button>
           </div>
         </header>
 
-        {/* Content */}
         <main className="flex-1 overflow-y-auto p-6">
-          {/* Stats */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            {statCards.map((s) => (
-              <div key={s.label} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-                <div className={`w-10 h-10 ${s.color} rounded-xl flex items-center justify-center text-xl mb-3`}>{s.icon}</div>
-                <p className="text-2xl font-black text-brand-navy">{s.value}</p>
-                <p className="text-sm text-gray-600 font-medium">{s.label}</p>
-              </div>
-            ))}
-          </div>
 
-          {/* Filters */}
-          <div className="bg-white rounded-2xl p-4 mb-4 flex flex-col sm:flex-row gap-3 shadow-sm border border-gray-100">
-            <input value={search} onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by name, reference, phone..." className="input-field flex-1 text-sm" />
-            <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="input-field text-sm sm:w-48">
-              <option value="all">All Status</option>
-              <option value="pending">Pending GCash</option>
-              <option value="pending_cash">Pending Cash</option>
-              <option value="confirmed">Confirmed</option>
-              <option value="completed">Completed</option>
-              <option value="cancelled">Cancelled</option>
-            </select>
-          </div>
-
-          {/* Table */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-              <h2 className="font-bold text-brand-navy">
-                Bookings <span className="text-sm text-gray-400 font-normal">({displayed.length})</span>
-              </h2>
-            </div>
-
-            {loading ? (
-              <div className="py-20 text-center text-gray-400">
-                <p className="text-4xl mb-4 animate-spin">⚙️</p>
-                <p>Loading bookings...</p>
+          {/* ── DASHBOARD OVERVIEW ── */}
+          {section === 'dashboard' && (
+            <div className="space-y-6">
+              {/* Stat cards */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                {[
+                  { label: 'Total Bookings', value: stats.total, color: 'bg-brand-navy', icon: (
+                    <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
+                  )},
+                  { label: "Today's Sessions", value: stats.today, color: 'bg-brand-pink', icon: (
+                    <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                  )},
+                  { label: 'Awaiting Review', value: stats.pending, color: 'bg-yellow-500', icon: (
+                    <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                  )},
+                  { label: 'Total Revenue', value: `₱${stats.revenue.toLocaleString()}`, color: 'bg-brand-lime-dark', icon: (
+                    <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                  )},
+                ].map((s) => (
+                  <div key={s.label} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex items-center gap-4">
+                    <div className={`w-12 h-12 ${s.color} rounded-2xl flex items-center justify-center shrink-0`}>{s.icon}</div>
+                    <div>
+                      <p className="text-2xl font-black text-brand-navy">{s.value}</p>
+                      <p className="text-xs text-gray-500 font-medium">{s.label}</p>
+                    </div>
+                  </div>
+                ))}
               </div>
-            ) : displayed.length === 0 ? (
-              <div className="py-20 text-center text-gray-400">
-                <p className="text-4xl mb-3">📭</p>
-                <p className="font-medium">No bookings found</p>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="bg-gray-50 text-gray-500 uppercase text-xs">
-                    <tr>
-                      {['Reference', 'Customer', 'Court', 'Date & Time', 'Amount', 'Payment', 'Proof', 'Status', 'Actions'].map((h) => (
-                        <th key={h} className="text-left py-3 px-4">{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-50">
-                    {displayed.map((b) => (
-                      <tr key={b.id} className="hover:bg-gray-50 transition-colors">
-                        <td className="py-3 px-4">
-                          <button onClick={() => setSelected(b)} className="text-brand-pink font-mono font-semibold hover:underline text-xs">
-                            {b.referenceNumber}
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Recent bookings */}
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                  <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                    <h2 className="font-bold text-brand-navy">Recent Bookings</h2>
+                    <button onClick={() => setSection('bookings')} className="text-brand-pink text-xs font-semibold hover:underline">View all →</button>
+                  </div>
+                  <div className="divide-y divide-gray-50">
+                    {bookings.slice(0, 5).map((b) => (
+                      <div key={b.id} className="px-6 py-3 flex items-center gap-3 hover:bg-gray-50 cursor-pointer" onClick={() => setSelected(b)}>
+                        <div className="w-9 h-9 rounded-full bg-brand-pink/10 flex items-center justify-center text-brand-pink font-black text-sm shrink-0">
+                          {b.customerName?.[0]?.toUpperCase()}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-brand-navy text-sm truncate">{b.customerName}</p>
+                          <p className="text-gray-400 text-xs">{b.courtName?.split('—')[0].trim()} · {b.date ? format(new Date(b.date + 'T00:00:00'), 'MMM d') : ''}</p>
+                        </div>
+                        <StatusBadge status={b.status} />
+                      </div>
+                    ))}
+                    {bookings.length === 0 && (
+                      <div className="py-10 text-center text-gray-400 text-sm">No bookings yet</div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Pending actions */}
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                  <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                    <h2 className="font-bold text-brand-navy">Needs Your Action</h2>
+                    <span className="bg-yellow-100 text-yellow-800 text-xs font-bold px-2 py-1 rounded-full">{stats.pending}</span>
+                  </div>
+                  <div className="divide-y divide-gray-50">
+                    {pendingBookings.slice(0, 5).map((b) => (
+                      <div key={b.id} className="px-6 py-3 flex items-center gap-3">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-brand-navy text-sm truncate">{b.customerName}</p>
+                          <p className="text-gray-400 text-xs">{b.referenceNumber} · ₱{b.totalAmount?.toLocaleString()}</p>
+                        </div>
+                        <div className="flex gap-1.5">
+                          <button onClick={() => updateStatus(b.id, 'confirmed')} disabled={updating}
+                            className="text-xs bg-green-100 hover:bg-green-500 hover:text-white text-green-700 font-semibold px-3 py-1.5 rounded-lg transition-colors">
+                            Confirm
                           </button>
-                        </td>
-                        <td className="py-3 px-4">
-                          <p className="font-semibold text-brand-navy">{b.customerName}</p>
-                          <p className="text-gray-400 text-xs">{b.customerPhone}</p>
-                        </td>
-                        <td className="py-3 px-4 text-gray-600">{b.courtName?.split('—')[0].trim()}</td>
-                        <td className="py-3 px-4">
-                          <p className="font-medium text-brand-navy">{b.date ? format(new Date(b.date + 'T00:00:00'), 'MMM d') : ''}</p>
-                          <p className="text-gray-400 text-xs">{fmtTime(b.timeStart)} – {fmtTime(b.timeEnd)}</p>
-                        </td>
-                        <td className="py-3 px-4 font-bold text-brand-navy">₱{b.totalAmount?.toLocaleString()}</td>
-                        <td className="py-3 px-4">
-                          <span className="text-xs font-semibold px-2 py-1 rounded-full bg-cyan-100 text-cyan-700">
-                            GoTyme InstaPay
-                          </span>
-                        </td>
-                        <td className="py-3 px-4">
-                          {b.screenshotPath ? (
-                            <a href={b.screenshotPath} target="_blank" rel="noopener noreferrer">
-                              <img src={b.screenshotPath} alt="proof"
-                                className="w-10 h-10 object-cover rounded-lg border border-gray-200 hover:scale-110 transition-transform cursor-zoom-in" />
-                            </a>
-                          ) : (
-                            <span className="text-gray-300 text-xs">—</span>
-                          )}
-                        </td>
-                        <td className="py-3 px-4">
-                          <span className={STATUS[b.status]?.cls || 'badge-pending'}>{STATUS[b.status]?.label || b.status}</span>
-                        </td>
-                        <td className="py-3 px-4">
-                          <div className="flex gap-1 flex-wrap">
+                          <button onClick={() => setSelected(b)}
+                            className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 font-semibold px-3 py-1.5 rounded-lg transition-colors">
+                            View
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                    {pendingBookings.length === 0 && (
+                      <div className="py-10 text-center text-gray-400 text-sm">All caught up! No pending bookings.</div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ── ALL BOOKINGS TABLE ── */}
+          {section === 'bookings' && (
+            <div className="space-y-4">
+              <div className="bg-white rounded-2xl p-4 flex flex-col sm:flex-row gap-3 shadow-sm border border-gray-100">
+                <input value={search} onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search by name, reference, phone..." className="input-field flex-1 text-sm" />
+                <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="input-field text-sm sm:w-48">
+                  <option value="all">All Status</option>
+                  <option value="pending">Pending Payment</option>
+                  <option value="confirmed">Confirmed</option>
+                  <option value="completed">Completed</option>
+                  <option value="cancelled">Cancelled</option>
+                </select>
+              </div>
+
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <div className="px-6 py-4 border-b border-gray-100">
+                  <h2 className="font-bold text-brand-navy">All Bookings <span className="text-gray-400 font-normal text-sm">({filtered.length})</span></h2>
+                </div>
+                {loading ? (
+                  <div className="py-20 text-center text-gray-400">Loading...</div>
+                ) : filtered.length === 0 ? (
+                  <div className="py-20 text-center text-gray-400">
+                    <svg className="w-12 h-12 mx-auto mb-3 opacity-30" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
+                    No bookings found
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead className="bg-gray-50 text-gray-500 uppercase text-xs">
+                        <tr>
+                          {['Reference', 'Customer', 'Court', 'Date & Time', 'Amount', 'Proof', 'Status', 'Actions'].map((h) => (
+                            <th key={h} className="text-left py-3 px-4 font-semibold">{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-50">
+                        {filtered.map((b) => (
+                          <tr key={b.id} className="hover:bg-gray-50 transition-colors">
+                            <td className="py-3 px-4">
+                              <button onClick={() => setSelected(b)} className="text-brand-pink font-mono font-semibold hover:underline text-xs">{b.referenceNumber}</button>
+                            </td>
+                            <td className="py-3 px-4">
+                              <p className="font-semibold text-brand-navy">{b.customerName}</p>
+                              <p className="text-gray-400 text-xs">{b.customerPhone}</p>
+                            </td>
+                            <td className="py-3 px-4 text-gray-600 font-medium">{b.courtName?.split('—')[0].trim()}</td>
+                            <td className="py-3 px-4">
+                              <p className="font-semibold text-brand-navy">{b.date ? format(new Date(b.date + 'T00:00:00'), 'MMM d, yyyy') : ''}</p>
+                              <p className="text-gray-400 text-xs">{fmtTime(b.timeStart)} – {fmtTime(b.timeEnd)}</p>
+                            </td>
+                            <td className="py-3 px-4 font-black text-brand-navy">₱{b.totalAmount?.toLocaleString()}</td>
+                            <td className="py-3 px-4">
+                              {b.screenshotPath ? (
+                                <a href={b.screenshotPath} target="_blank" rel="noopener noreferrer">
+                                  <img src={b.screenshotPath} alt="proof" className="w-10 h-10 object-cover rounded-lg border border-gray-200 hover:scale-110 transition-transform cursor-zoom-in" />
+                                </a>
+                              ) : <span className="text-gray-300 text-xs">—</span>}
+                            </td>
+                            <td className="py-3 px-4"><StatusBadge status={b.status} /></td>
+                            <td className="py-3 px-4">
+                              <div className="flex gap-1 flex-wrap">
+                                {['pending', 'pending_cash'].includes(b.status) && (
+                                  <button onClick={() => updateStatus(b.id, 'confirmed')} disabled={updating}
+                                    className="text-xs bg-green-100 hover:bg-green-200 text-green-700 font-semibold px-2.5 py-1.5 rounded-lg transition-colors">Confirm</button>
+                                )}
+                                {b.status === 'confirmed' && (
+                                  <button onClick={() => updateStatus(b.id, 'completed')} disabled={updating}
+                                    className="text-xs bg-blue-100 hover:bg-blue-200 text-blue-700 font-semibold px-2.5 py-1.5 rounded-lg transition-colors">Complete</button>
+                                )}
+                                {!['cancelled', 'completed'].includes(b.status) && (
+                                  <button onClick={() => cancelBooking(b.id)} disabled={updating}
+                                    className="text-xs bg-red-100 hover:bg-red-200 text-red-600 font-semibold px-2.5 py-1.5 rounded-lg transition-colors">Cancel</button>
+                                )}
+                                <button onClick={() => setSelected(b)}
+                                  className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 font-semibold px-2.5 py-1.5 rounded-lg transition-colors">View</button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* ── PENDING APPROVALS ── */}
+          {section === 'pending' && (
+            <div className="space-y-4">
+              <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-4 flex items-start gap-3">
+                <svg className="w-5 h-5 text-yellow-600 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" /></svg>
+                <div>
+                  <p className="font-bold text-yellow-800 text-sm">Review payment screenshots before confirming</p>
+                  <p className="text-yellow-700 text-xs mt-0.5">Check that the amount and account match before you confirm a booking.</p>
+                </div>
+              </div>
+
+              {loading ? (
+                <div className="py-20 text-center text-gray-400">Loading...</div>
+              ) : pendingBookings.length === 0 ? (
+                <div className="bg-white rounded-2xl py-20 text-center text-gray-400 shadow-sm border border-gray-100">
+                  <svg className="w-14 h-14 mx-auto mb-3 opacity-25" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                  <p className="font-semibold">All caught up!</p>
+                  <p className="text-sm mt-1">No pending bookings to review.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                  {pendingBookings.map((b) => (
+                    <div key={b.id} className="bg-white rounded-2xl shadow-sm border-2 border-yellow-200 overflow-hidden">
+                      <div className="bg-yellow-50 px-5 py-3 flex items-center justify-between border-b border-yellow-100">
+                        <span className="font-mono text-xs font-bold text-yellow-800">{b.referenceNumber}</span>
+                        <StatusBadge status={b.status} />
+                      </div>
+                      <div className="p-5">
+                        <div className="flex items-center gap-3 mb-4">
+                          <div className="w-10 h-10 rounded-full bg-brand-pink/10 flex items-center justify-center text-brand-pink font-black shrink-0">
+                            {b.customerName?.[0]?.toUpperCase()}
+                          </div>
+                          <div>
+                            <p className="font-bold text-brand-navy">{b.customerName}</p>
+                            <p className="text-gray-400 text-xs">{b.customerPhone}</p>
+                          </div>
+                        </div>
+                        <div className="space-y-1.5 text-sm mb-4">
+                          <div className="flex justify-between">
+                            <span className="text-gray-400">Court</span>
+                            <span className="font-semibold text-brand-navy">{b.courtName?.split('—')[0].trim()}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-400">Date</span>
+                            <span className="font-semibold text-brand-navy">{b.date ? format(new Date(b.date + 'T00:00:00'), 'MMM d, yyyy') : ''}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-400">Time</span>
+                            <span className="font-semibold text-brand-navy">{fmtTime(b.timeStart)} – {fmtTime(b.timeEnd)}</span>
+                          </div>
+                          <div className="flex justify-between pt-1 border-t border-gray-100">
+                            <span className="font-bold text-brand-navy">Amount</span>
+                            <span className="font-black text-brand-pink text-lg">₱{b.totalAmount?.toLocaleString()}</span>
+                          </div>
+                        </div>
+
+                        {b.screenshotPath ? (
+                          <a href={b.screenshotPath} target="_blank" rel="noopener noreferrer">
+                            <img src={b.screenshotPath} alt="Payment proof"
+                              className="w-full h-32 object-cover rounded-xl border border-gray-200 hover:opacity-90 transition-opacity cursor-zoom-in mb-4" />
+                          </a>
+                        ) : (
+                          <div className="w-full h-20 bg-gray-50 rounded-xl flex items-center justify-center text-gray-300 text-xs mb-4 border border-dashed border-gray-200">
+                            No screenshot uploaded
+                          </div>
+                        )}
+
+                        <div className="flex gap-2">
+                          <button onClick={() => updateStatus(b.id, 'confirmed')} disabled={updating}
+                            className="flex-1 bg-green-500 hover:bg-green-600 text-white font-bold py-2.5 rounded-xl text-sm transition-colors">
+                            ✓ Confirm
+                          </button>
+                          <button onClick={() => cancelBooking(b.id)} disabled={updating}
+                            className="flex-1 bg-red-100 hover:bg-red-500 hover:text-white text-red-600 font-bold py-2.5 rounded-xl text-sm transition-colors">
+                            ✕ Cancel
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ── TODAY'S SCHEDULE ── */}
+          {section === 'today' && (
+            <div className="space-y-4">
+              <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex items-center gap-4">
+                <div className="w-14 h-14 bg-brand-pink rounded-2xl flex flex-col items-center justify-center text-white shrink-0">
+                  <p className="text-xs font-semibold uppercase">{format(new Date(), 'MMM')}</p>
+                  <p className="text-2xl font-black leading-none">{format(new Date(), 'd')}</p>
+                </div>
+                <div>
+                  <p className="font-black text-brand-navy text-lg">{format(new Date(), 'EEEE')}</p>
+                  <p className="text-gray-400 text-sm">{todayBookings.length} session{todayBookings.length !== 1 ? 's' : ''} scheduled today</p>
+                </div>
+                <div className="ml-auto flex gap-3 text-center">
+                  {[
+                    { label: 'Confirmed', val: todayBookings.filter(b => b.status === 'confirmed').length, color: 'text-green-600' },
+                    { label: 'Pending', val: todayBookings.filter(b => ['pending','pending_cash'].includes(b.status)).length, color: 'text-yellow-600' },
+                    { label: 'Completed', val: todayBookings.filter(b => b.status === 'completed').length, color: 'text-blue-600' },
+                  ].map(s => (
+                    <div key={s.label} className="hidden sm:block">
+                      <p className={`text-2xl font-black ${s.color}`}>{s.val}</p>
+                      <p className="text-xs text-gray-400">{s.label}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {loading ? (
+                <div className="py-20 text-center text-gray-400">Loading...</div>
+              ) : todayBookings.length === 0 ? (
+                <div className="bg-white rounded-2xl py-20 text-center text-gray-400 shadow-sm border border-gray-100">
+                  <svg className="w-14 h-14 mx-auto mb-3 opacity-25" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                  <p className="font-semibold">No sessions today</p>
+                  <p className="text-sm mt-1">Bookings for today will appear here.</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {todayBookings.map((b) => (
+                    <div key={b.id} className={`bg-white rounded-2xl shadow-sm border-l-4 overflow-hidden flex ${
+                      b.status === 'confirmed' ? 'border-green-400' :
+                      b.status === 'completed' ? 'border-blue-400' :
+                      b.status === 'cancelled' ? 'border-gray-300' : 'border-yellow-400'
+                    }`}>
+                      <div className="flex flex-col items-center justify-center px-5 py-4 bg-gray-50 border-r border-gray-100 min-w-[90px] text-center">
+                        <p className="text-brand-pink font-black text-base">{fmtTime(b.timeStart)}</p>
+                        <p className="text-gray-400 text-xs my-0.5">to</p>
+                        <p className="text-brand-navy font-bold text-sm">{fmtTime(b.timeEnd)}</p>
+                        <p className="text-gray-400 text-xs mt-1">{b.duration}hr{b.duration > 1 ? 's' : ''}</p>
+                      </div>
+                      <div className="flex-1 p-4 flex flex-col sm:flex-row sm:items-center gap-3">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <p className="font-bold text-brand-navy">{b.customerName}</p>
+                            <StatusBadge status={b.status} />
+                          </div>
+                          <p className="text-gray-500 text-sm">{b.courtName?.split('—')[0].trim()} · {b.customerPhone}</p>
+                          <p className="text-xs text-gray-400 font-mono mt-0.5">{b.referenceNumber}</p>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <p className="font-black text-brand-navy text-lg">₱{b.totalAmount?.toLocaleString()}</p>
+                          <div className="flex gap-1.5">
                             {['pending', 'pending_cash'].includes(b.status) && (
                               <button onClick={() => updateStatus(b.id, 'confirmed')} disabled={updating}
-                                className="text-xs bg-green-100 hover:bg-green-200 text-green-700 font-semibold px-3 py-1.5 rounded-lg transition-colors">Confirm</button>
+                                className="text-xs bg-green-100 hover:bg-green-500 hover:text-white text-green-700 font-bold px-3 py-2 rounded-xl transition-colors">Confirm</button>
                             )}
                             {b.status === 'confirmed' && (
                               <button onClick={() => updateStatus(b.id, 'completed')} disabled={updating}
-                                className="text-xs bg-blue-100 hover:bg-blue-200 text-blue-700 font-semibold px-3 py-1.5 rounded-lg transition-colors">Complete</button>
-                            )}
-                            {!['cancelled', 'completed'].includes(b.status) && (
-                              <button onClick={() => cancelBooking(b.id)} disabled={updating}
-                                className="text-xs bg-red-100 hover:bg-red-200 text-red-600 font-semibold px-3 py-1.5 rounded-lg transition-colors">Cancel</button>
+                                className="text-xs bg-blue-100 hover:bg-blue-500 hover:text-white text-blue-700 font-bold px-3 py-2 rounded-xl transition-colors">Done</button>
                             )}
                             <button onClick={() => setSelected(b)}
-                              className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 font-semibold px-3 py-1.5 rounded-lg transition-colors">View</button>
+                              className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold px-3 py-2 rounded-xl transition-colors">View</button>
                           </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
         </main>
       </div>
 
       {/* Detail Modal */}
       {selected && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setSelected(null)}>
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={() => setSelected(null)}>
           <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <div className="hero-gradient p-6">
               <div className="flex items-start justify-between">
@@ -316,21 +560,17 @@ export default function AdminDashboard() {
                   <p className="text-white/60 text-xs mb-1">Booking Reference</p>
                   <p className="text-2xl font-black text-brand-pink">{selected.referenceNumber}</p>
                 </div>
-                <button onClick={() => setSelected(null)} className="text-white/60 hover:text-white">
-                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
+                <button onClick={() => setSelected(null)} className="text-white/60 hover:text-white p-1">
+                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
                 </button>
               </div>
-              <div className="mt-3">
-                <span className={STATUS[selected.status]?.cls}>{STATUS[selected.status]?.label}</span>
-              </div>
+              <div className="mt-3"><StatusBadge status={selected.status} /></div>
             </div>
 
             <div className="p-6 space-y-5">
               <div>
-                <h4 className="font-bold text-gray-500 text-xs uppercase tracking-widest mb-3">Customer</h4>
-                {[['Name', selected.customerName], ['Phone', selected.customerPhone], ['Email', selected.customerEmail || 'N/A']].map(([l, v]) => (
+                <h4 className="font-bold text-gray-400 text-xs uppercase tracking-widest mb-3">Customer</h4>
+                {[['Name', selected.customerName], ['Phone', selected.customerPhone], ['Email', selected.customerEmail || '—']].map(([l, v]) => (
                   <div key={l} className="flex gap-3 mb-2">
                     <span className="text-gray-400 text-sm w-16 shrink-0">{l}</span>
                     <span className="font-semibold text-brand-navy text-sm">{v}</span>
@@ -339,7 +579,7 @@ export default function AdminDashboard() {
               </div>
 
               <div className="border-t pt-4">
-                <h4 className="font-bold text-gray-500 text-xs uppercase tracking-widest mb-3">Booking</h4>
+                <h4 className="font-bold text-gray-400 text-xs uppercase tracking-widest mb-3">Booking Details</h4>
                 {[
                   ['Court', selected.courtName],
                   ['Date', selected.date ? format(new Date(selected.date + 'T00:00:00'), 'MMMM d, yyyy (EEE)') : ''],
@@ -355,46 +595,36 @@ export default function AdminDashboard() {
               </div>
 
               <div className="border-t pt-4">
-                <h4 className="font-bold text-gray-500 text-xs uppercase tracking-widest mb-3">Payment</h4>
+                <h4 className="font-bold text-gray-400 text-xs uppercase tracking-widest mb-3">Payment</h4>
                 {[
                   ['Method', 'GoTyme Bank InstaPay'],
-                  ...(selected.gcashReference ? [['GCash Ref', selected.gcashReference]] : []),
-                  ['Booked', selected.createdAt ? format(new Date(selected.createdAt), 'MMM d, yyyy · h:mm a') : ''],
+                  ...(selected.gcashReference ? [['Reference', selected.gcashReference]] : []),
+                  ['Booked at', selected.createdAt ? format(new Date(selected.createdAt), 'MMM d, yyyy · h:mm a') : ''],
                 ].map(([l, v]) => (
                   <div key={l} className="flex gap-3 mb-2">
                     <span className="text-gray-400 text-sm w-20 shrink-0">{l}</span>
-                    <span className="font-semibold text-brand-navy text-sm font-mono">{v}</span>
+                    <span className="font-semibold text-brand-navy text-sm">{v}</span>
                   </div>
                 ))}
               </div>
 
-              {/* Payment Screenshot */}
-              {selected.screenshotPath && (
-                <div className="border-t pt-4">
-                  <h4 className="font-bold text-gray-500 text-xs uppercase tracking-widest mb-3">Payment Screenshot</h4>
-                  <a href={selected.screenshotPath} target="_blank" rel="noopener noreferrer">
-                    <img
-                      src={selected.screenshotPath}
-                      alt="Payment proof"
-                      className="w-full rounded-2xl border border-gray-200 hover:opacity-90 transition-opacity cursor-zoom-in"
-                    />
-                  </a>
-                  <p className="text-xs text-gray-400 mt-2 text-center">Click image to open full size</p>
-                </div>
-              )}
-
-              {!selected.screenshotPath && (
-                <div className="border-t pt-4">
-                  <h4 className="font-bold text-gray-500 text-xs uppercase tracking-widest mb-2">Payment Screenshot</h4>
-                  <div className="bg-gray-50 rounded-xl p-4 text-center text-gray-400 text-sm">
-                    No screenshot uploaded yet
-                  </div>
-                </div>
-              )}
+              <div className="border-t pt-4">
+                <h4 className="font-bold text-gray-400 text-xs uppercase tracking-widest mb-3">Payment Screenshot</h4>
+                {selected.screenshotPath ? (
+                  <>
+                    <a href={selected.screenshotPath} target="_blank" rel="noopener noreferrer">
+                      <img src={selected.screenshotPath} alt="Payment proof" className="w-full rounded-2xl border border-gray-200 hover:opacity-90 transition-opacity cursor-zoom-in" />
+                    </a>
+                    <p className="text-xs text-gray-400 mt-2 text-center">Click to open full size</p>
+                  </>
+                ) : (
+                  <div className="bg-gray-50 rounded-xl p-6 text-center text-gray-400 text-sm border border-dashed border-gray-200">No screenshot uploaded</div>
+                )}
+              </div>
 
               {selected.notes && (
                 <div className="border-t pt-4">
-                  <h4 className="font-bold text-gray-500 text-xs uppercase tracking-widest mb-2">Notes</h4>
+                  <h4 className="font-bold text-gray-400 text-xs uppercase tracking-widest mb-2">Notes</h4>
                   <p className="text-sm text-gray-600 bg-gray-50 rounded-xl p-3">{selected.notes}</p>
                 </div>
               )}
@@ -402,21 +632,15 @@ export default function AdminDashboard() {
               <div className="border-t pt-4 flex flex-wrap gap-2">
                 {['pending', 'pending_cash'].includes(selected.status) && (
                   <button onClick={() => updateStatus(selected.id, 'confirmed')} disabled={updating}
-                    className="flex-1 bg-green-500 hover:bg-green-600 text-white font-semibold py-3 rounded-xl text-sm transition-colors">
-                    ✓ Confirm Booking
-                  </button>
+                    className="flex-1 bg-green-500 hover:bg-green-600 text-white font-bold py-3 rounded-xl text-sm transition-colors">✓ Confirm Booking</button>
                 )}
                 {selected.status === 'confirmed' && (
                   <button onClick={() => updateStatus(selected.id, 'completed')} disabled={updating}
-                    className="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 rounded-xl text-sm transition-colors">
-                    ✓ Mark Complete
-                  </button>
+                    className="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 rounded-xl text-sm transition-colors">✓ Mark Complete</button>
                 )}
                 {!['cancelled', 'completed'].includes(selected.status) && (
                   <button onClick={() => cancelBooking(selected.id)} disabled={updating}
-                    className="flex-1 bg-red-100 hover:bg-red-500 hover:text-white text-red-600 font-semibold py-3 rounded-xl text-sm transition-colors">
-                    ✕ Cancel
-                  </button>
+                    className="flex-1 bg-red-100 hover:bg-red-500 hover:text-white text-red-600 font-bold py-3 rounded-xl text-sm transition-colors">✕ Cancel</button>
                 )}
               </div>
             </div>

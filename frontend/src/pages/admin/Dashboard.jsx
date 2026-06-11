@@ -87,6 +87,18 @@ export default function AdminDashboard() {
     finally { setUpdating(false) }
   }
 
+  const deleteBooking = async (id) => {
+    if (!confirm('Permanently delete this booking? This cannot be undone.')) return
+    setUpdating(true)
+    try {
+      await api.adminDelete(`/bookings/${id}/permanent`)
+      toast.success('Booking deleted')
+      await fetchBookings()
+      if (selected?.id === id) setSelected(null)
+    } catch { toast.error('Delete failed') }
+    finally { setUpdating(false) }
+  }
+
   const stats = {
     total: bookings.length,
     today: bookings.filter((b) => b.date === today && b.status !== 'cancelled').length,
@@ -370,6 +382,10 @@ export default function AdminDashboard() {
                                 )}
                                 <button onClick={() => setSelected(b)}
                                   className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 font-semibold px-2.5 py-1.5 rounded-lg transition-colors">View</button>
+                                <button onClick={() => deleteBooking(b.id)} disabled={updating} title="Delete permanently"
+                                  className="text-xs bg-red-500 hover:bg-red-700 text-white font-semibold px-2.5 py-1.5 rounded-lg transition-colors">
+                                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                </button>
                               </div>
                             </td>
                           </tr>
@@ -642,6 +658,11 @@ export default function AdminDashboard() {
                   <button onClick={() => cancelBooking(selected.id)} disabled={updating}
                     className="flex-1 bg-red-100 hover:bg-red-500 hover:text-white text-red-600 font-bold py-3 rounded-xl text-sm transition-colors">✕ Cancel</button>
                 )}
+                <button onClick={() => deleteBooking(selected.id)} disabled={updating}
+                  className="w-full flex items-center justify-center gap-2 bg-gray-100 hover:bg-red-600 hover:text-white text-gray-500 font-bold py-3 rounded-xl text-sm transition-colors mt-1">
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                  Delete Permanently
+                </button>
               </div>
             </div>
           </div>

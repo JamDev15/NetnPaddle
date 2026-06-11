@@ -178,6 +178,16 @@ def cancel_booking(booking_id: str, admin: bool = Depends(require_admin), db: Se
     return {"message": "Booking cancelled"}
 
 
+@router.delete("/{booking_id}/permanent")
+def delete_booking(booking_id: str, admin: bool = Depends(require_admin), db: Session = Depends(get_db)):
+    b = db.query(Booking).filter(Booking.id == booking_id).first()
+    if not b:
+        raise HTTPException(status_code=404, detail="Booking not found")
+    db.delete(b)
+    db.commit()
+    return {"message": "Booking permanently deleted"}
+
+
 @router.post("/{booking_id}/screenshot")
 async def upload_booking_screenshot(booking_id: str, file: UploadFile = File(...), db: Session = Depends(get_db)):
     b = db.query(Booking).filter(Booking.id == booking_id).first()

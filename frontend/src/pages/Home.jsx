@@ -240,7 +240,7 @@ export default function Home() {
             <h2 className="section-title mt-2">Choose Your Court</h2>
             <p className="text-gray-500 mt-3 text-lg">3 outdoor courts to suit every style of play</p>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
             {COURTS.map((c) => (
               <div key={c.id} className="card court-card group">
                 <div className={`h-36 bg-gradient-to-br ${c.grad} flex items-center justify-center`}><PickleballIcon /></div>

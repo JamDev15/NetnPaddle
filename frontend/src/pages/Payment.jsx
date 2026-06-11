@@ -14,7 +14,7 @@ function fmtTime(t) {
   return `${d}:00 ${ap}`
 }
 
-const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif']
+const IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp', 'heic', 'heif', 'gif', 'bmp', 'tiff']
 const MAX_FILE_MB = 10
 
 function validateRef(ref) {
@@ -35,11 +35,17 @@ export default function Payment() {
   const [confirmed, setConfirmed] = useState(false)
   const [loading, setLoading] = useState(false)
 
+  const isImageFile = (file) => {
+    if (file.type.startsWith('image/')) return true
+    const ext = file.name.split('.').pop().toLowerCase()
+    return IMAGE_EXTENSIONS.includes(ext)
+  }
+
   const handleFileChange = (e) => {
     const file = e.target.files[0]
     if (!file) return
-    if (!ACCEPTED_TYPES.includes(file.type)) {
-      toast.error('Please upload an image file (JPG, PNG, WEBP)')
+    if (!isImageFile(file)) {
+      toast.error('Please upload an image file (JPG, PNG, WEBP, HEIC)')
       return
     }
     if (file.size > MAX_FILE_MB * 1024 * 1024) {
@@ -54,8 +60,8 @@ export default function Payment() {
     e.preventDefault()
     const file = e.dataTransfer.files[0]
     if (!file) return
-    if (!ACCEPTED_TYPES.includes(file.type)) {
-      toast.error('Please upload an image file (JPG, PNG, WEBP)')
+    if (!isImageFile(file)) {
+      toast.error('Please upload an image file (JPG, PNG, WEBP, HEIC)')
       return
     }
     if (file.size > MAX_FILE_MB * 1024 * 1024) {

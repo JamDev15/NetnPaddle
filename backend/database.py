@@ -1,19 +1,12 @@
 import os
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, declarative_base
+from pymongo import MongoClient
 
-_data_dir = "/data" if os.path.isdir("/data") else os.path.join(os.path.dirname(__file__), "data")
-DB_PATH = os.path.join(_data_dir, "netpaddle.db")
-DATABASE_URL = f"sqlite:///{DB_PATH}"
+MONGODB_URI = os.environ.get("MONGODB_URI", "mongodb://localhost:27017")
 
-engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-Base = declarative_base()
+client = MongoClient(MONGODB_URI)
+db = client["netpaddle"]
+bookings_col = db["bookings"]
 
-
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+bookings_col.create_index("referenceNumber", unique=True)
+bookings_col.create_index("date")
+bookings_col.create_index([("courtId", 1), ("date", 1)])

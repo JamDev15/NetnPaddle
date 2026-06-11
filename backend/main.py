@@ -1,14 +1,9 @@
 import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
 from routers import auth, courts, bookings
-from database import engine
-import models
 
-models.Base.metadata.create_all(bind=engine)
-
-app = FastAPI(title="Net N' Paddle API", version="1.0.0")
+app = FastAPI(title="Net N' Paddle API", version="2.0.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -26,12 +21,6 @@ app.add_middleware(
 app.include_router(auth.router, prefix="/api/auth", tags=["Auth"])
 app.include_router(courts.router, prefix="/api/courts", tags=["Courts"])
 app.include_router(bookings.router, prefix="/api/bookings", tags=["Bookings"])
-
-# Serve uploaded payment screenshots
-_base_dir = "/data" if os.path.isdir("/data") else os.path.dirname(__file__)
-uploads_dir = os.path.join(_base_dir, "uploads")
-os.makedirs(uploads_dir, exist_ok=True)
-app.mount("/uploads", StaticFiles(directory=uploads_dir), name="uploads")
 
 
 @app.get("/")

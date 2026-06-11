@@ -35,6 +35,7 @@ export default function AdminDashboard() {
   const [section, setSection] = useState('dashboard')
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [updating, setUpdating] = useState(false)
+  const [calMonth, setCalMonth] = useState(new Date())
   const [rescheduleModal, setRescheduleModal] = useState(null)
   const [rescheduleForm, setRescheduleForm] = useState({ date: '', timeStart: '', duration: 1, courtId: '', courtName: '' })
   const [courts, setCourts] = useState([])
@@ -153,6 +154,25 @@ export default function AdminDashboard() {
       if (selected?.id === id) setSelected(null)
     } catch { toast.error('Delete failed') }
     finally { setUpdating(false) }
+  }
+
+  // Calendar helpers
+  const bookingsByDate = bookings.reduce((acc, b) => {
+    if (b.status === 'cancelled') return acc
+    acc[b.date] = acc[b.date] || []
+    acc[b.date].push(b)
+    return acc
+  }, {})
+
+  const calDays = () => {
+    const year = calMonth.getFullYear()
+    const month = calMonth.getMonth()
+    const firstDay = new Date(year, month, 1).getDay()
+    const daysInMonth = new Date(year, month + 1, 0).getDate()
+    const days = []
+    for (let i = 0; i < firstDay; i++) days.push(null)
+    for (let d = 1; d <= daysInMonth; d++) days.push(d)
+    return days
   }
 
   const stats = {
@@ -356,6 +376,77 @@ export default function AdminDashboard() {
                     {pendingBookings.length === 0 && (
                       <div className="py-10 text-center text-gray-400 text-sm">All caught up! No pending bookings.</div>
                     )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Booking Calendar */}
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                  <h2 className="font-bold text-brand-navy">Booking Calendar</h2>
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => setCalMonth(m => new Date(m.getFullYear(), m.getMonth() - 1))}
+                      className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors">
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+                    </button>
+                    <span className="font-bold text-brand-navy text-sm w-32 text-center">{format(calMonth, 'MMMM yyyy')}</span>
+                    <button onClick={() => setCalMonth(m => new Date(m.getFullYear(), m.getMonth() + 1))}
+                      className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors">
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                    </button>
+                  </div>
+                </div>
+                <div className="p-4">
+                  {/* Day headers */}
+                  <div className="grid grid-cols-7 mb-1">
+                    {['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d => (
+                      <div key={d} className="text-center text-xs font-bold text-gray-400 py-1">{d}</div>
+                    ))}
+                  </div>
+                  {/* Calendar days */}
+                  <div className="grid grid-cols-7 gap-1">
+                    {calDays().map((d, i) => {
+                      if (!d) return <div key={`e-${i}`} />
+                      const dateStr = `${calMonth.getFullYear()}-${String(calMonth.getMonth()+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`
+                      const dayBookings = bookingsByDate[dateStr] || []
+                      const isToday = dateStr === today
+                      const hasPending = dayBookings.some(b => ['pending','pending_cash'].includes(b.status))
+                      const hasConfirmed = dayBookings.some(b => b.status === 'confirmed')
+                      return (
+                        <button key={d} onClick={() => { setSection('bookings'); setSearch(''); setFilterStatus('all') }}
+                          className={`relative flex flex-col items-center py-1.5 rounded-xl transition-all text-xs font-semibold ${
+                            isToday ? 'bg-brand-pink text-white' :
+                            dayBookings.length > 0 ? 'bg-gray-50 hover:bg-gray-100 text-brand-navy' :
+                            'hover:bg-gray-50 text-gray-400'
+                          }`}>
+                          <span>{d}</span>
+                          {dayBookings.length > 0 && (
+                            <div className="flex gap-0.5 mt-0.5">
+                              {hasConfirmed && <span className="w-1.5 h-1.5 rounded-full bg-green-400" />}
+                              {hasPending && <span className="w-1.5 h-1.5 rounded-full bg-yellow-400" />}
+                              {!hasConfirmed && !hasPending && <span className="w-1.5 h-1.5 rounded-full bg-blue-400" />}
+                            </div>
+                          )}
+                          {dayBookings.length > 0 && !isToday && (
+                            <span className="text-[10px] text-gray-400 leading-none">{dayBookings.length}</span>
+                          )}
+                        </button>
+                      )
+                    })}
+                  </div>
+                  {/* Legend */}
+                  <div className="flex items-center gap-4 mt-4 pt-3 border-t border-gray-100 justify-center flex-wrap">
+                    {[
+                      { color: 'bg-green-400', label: 'Confirmed' },
+                      { color: 'bg-yellow-400', label: 'Pending' },
+                      { color: 'bg-blue-400', label: 'Completed' },
+                      { color: 'bg-brand-pink', label: 'Today' },
+                    ].map(l => (
+                      <div key={l.label} className="flex items-center gap-1.5 text-xs text-gray-500">
+                        <span className={`w-2.5 h-2.5 rounded-full ${l.color}`} />
+                        {l.label}
+                      </div>
+                    ))}
                   </div>
                 </div>
               </div>
@@ -611,6 +702,10 @@ export default function AdminDashboard() {
                             )}
                             <button onClick={() => setSelected(b)}
                               className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold px-3 py-2 rounded-xl transition-colors">View</button>
+                            <button onClick={() => deleteBooking(b.id)} disabled={updating} title="Delete permanently"
+                              className="text-xs bg-red-500 hover:bg-red-700 text-white font-bold px-3 py-2 rounded-xl transition-colors">
+                              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                            </button>
                           </div>
                         </div>
                       </div>

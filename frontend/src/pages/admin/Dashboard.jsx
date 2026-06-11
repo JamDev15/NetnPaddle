@@ -35,6 +35,10 @@ export default function AdminDashboard() {
   const [section, setSection] = useState('dashboard')
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [updating, setUpdating] = useState(false)
+  const [rescheduleModal, setRescheduleModal] = useState(null)
+  const [rescheduleForm, setRescheduleForm] = useState({ date: '', timeStart: '', duration: 1, courtId: '', courtName: '' })
+  const [courts, setCourts] = useState([])
+  const [bookedSlots, setBookedSlots] = useState([])
 
   const today = format(new Date(), 'yyyy-MM-dd')
 
@@ -57,7 +61,59 @@ export default function AdminDashboard() {
   useEffect(() => {
     document.title = "Admin Dashboard — Net N' Paddle"
     fetchBookings()
+    api.get('/courts/').then(setCourts).catch(() => {})
   }, [fetchBookings])
+
+  useEffect(() => {
+    if (!rescheduleModal) return
+    const { courtId, date } = rescheduleForm
+    if (!courtId || !date) { setBookedSlots([]); return }
+    api.get(`/bookings/availability?courtId=${courtId}&date=${date}`)
+      .then((d) => setBookedSlots((d.bookedSlots || []).filter((h) => {
+        const s = parseInt(rescheduleModal.timeStart)
+        const dur = rescheduleModal.duration
+        return !(h >= s && h < s + dur)
+      })))
+      .catch(() => setBookedSlots([]))
+  }, [rescheduleForm.courtId, rescheduleForm.date, rescheduleModal])
+
+  const openReschedule = (b) => {
+    setRescheduleForm({
+      date: b.date,
+      timeStart: b.timeStart,
+      duration: b.duration,
+      courtId: b.courtId,
+      courtName: b.courtName,
+    })
+    setRescheduleModal(b)
+  }
+
+  const submitReschedule = async () => {
+    const { date, timeStart, duration, courtId, courtName } = rescheduleForm
+    if (!date || !timeStart || !courtId) return toast.error('Fill in all fields')
+    setUpdating(true)
+    try {
+      const updated = await api.adminPut(`/bookings/${rescheduleModal.id}`, { date, timeStart, duration: Number(duration), courtId, courtName })
+      toast.success('Booking rescheduled!')
+      await fetchBookings()
+      setRescheduleModal(null)
+      if (selected?.id === rescheduleModal.id) setSelected(updated)
+    } catch (e) { toast.error(e.message || 'Reschedule failed') }
+    finally { setUpdating(false) }
+  }
+
+  function timeLabel(h) {
+    const ap = h < 12 ? 'AM' : 'PM'
+    const d = h === 0 ? 12 : h > 12 ? h - 12 : h
+    return `${d}:00 ${ap}`
+  }
+
+  function slotAvailable(h) {
+    const dur = Number(rescheduleForm.duration)
+    if (h + dur > 23) return false
+    for (let i = 0; i < dur; i++) if (bookedSlots.includes(h + i)) return false
+    return true
+  }
 
   const handleLogout = () => {
     localStorage.removeItem('adminToken')
@@ -382,6 +438,8 @@ export default function AdminDashboard() {
                                 )}
                                 <button onClick={() => setSelected(b)}
                                   className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 font-semibold px-2.5 py-1.5 rounded-lg transition-colors">View</button>
+                                <button onClick={() => openReschedule(b)} disabled={updating}
+                                  className="text-xs bg-blue-100 hover:bg-blue-200 text-blue-700 font-semibold px-2.5 py-1.5 rounded-lg transition-colors">Reschedule</button>
                                 <button onClick={() => deleteBooking(b.id)} disabled={updating} title="Delete permanently"
                                   className="text-xs bg-red-500 hover:bg-red-700 text-white font-semibold px-2.5 py-1.5 rounded-lg transition-colors">
                                   <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
@@ -566,6 +624,107 @@ export default function AdminDashboard() {
         </main>
       </div>
 
+      {/* Reschedule Modal */}
+      {rescheduleModal && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={() => setRescheduleModal(null)}>
+          <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="hero-gradient p-6">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-white/60 text-xs mb-1">Rescheduling</p>
+                  <p className="text-xl font-black text-white">{rescheduleModal.customerName}</p>
+                  <p className="text-brand-lime text-sm font-mono mt-0.5">{rescheduleModal.referenceNumber}</p>
+                </div>
+                <button onClick={() => setRescheduleModal(null)} className="text-white/60 hover:text-white p-1">
+                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6 space-y-5">
+              {/* Court */}
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Court</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {courts.map((c) => (
+                    <button key={c.id} onClick={() => setRescheduleForm((f) => ({ ...f, courtId: c.id, courtName: c.name, timeStart: '' }))}
+                      className={`py-3 rounded-xl border-2 text-sm font-semibold transition-all ${rescheduleForm.courtId === c.id ? 'border-brand-pink bg-brand-pink text-white' : 'border-gray-200 text-gray-600 hover:border-brand-pink'}`}>
+                      {c.name?.split('—')[0].trim()}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Date */}
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Date</label>
+                <input type="date" value={rescheduleForm.date}
+                  min={format(new Date(), 'yyyy-MM-dd')}
+                  onChange={(e) => setRescheduleForm((f) => ({ ...f, date: e.target.value, timeStart: '' }))}
+                  className="input-field w-full" />
+              </div>
+
+              {/* Duration */}
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Duration</label>
+                <div className="flex gap-2">
+                  {[1, 2, 3, 4, 5].map((d) => (
+                    <button key={d} onClick={() => setRescheduleForm((f) => ({ ...f, duration: d, timeStart: '' }))}
+                      className={`flex-1 py-2.5 rounded-xl border-2 text-sm font-bold transition-all ${rescheduleForm.duration === d ? 'border-brand-pink bg-brand-pink text-white' : 'border-gray-200 text-gray-600 hover:border-brand-pink'}`}>
+                      {d}h
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Time slots */}
+              {rescheduleForm.courtId && rescheduleForm.date ? (
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Start Time</label>
+                  <div className="grid grid-cols-4 gap-2">
+                    {Array.from({ length: 17 }, (_, i) => i + 6).map((h) => {
+                      const avail = slotAvailable(h)
+                      const sel = rescheduleForm.timeStart === `${String(h).padStart(2, '0')}:00`
+                      return (
+                        <button key={h} disabled={!avail}
+                          onClick={() => setRescheduleForm((f) => ({ ...f, timeStart: `${String(h).padStart(2, '0')}:00` }))}
+                          className={`py-2.5 rounded-xl border-2 text-xs font-semibold transition-all ${
+                            sel ? 'border-brand-pink bg-brand-pink text-white' :
+                            avail ? 'border-gray-200 text-gray-600 hover:border-brand-pink' :
+                            'border-gray-100 bg-gray-50 text-gray-300 cursor-not-allowed'
+                          }`}>
+                          {timeLabel(h)}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-gray-50 rounded-xl p-4 text-center text-gray-400 text-sm border border-dashed border-gray-200">
+                  Select a court and date to see available time slots
+                </div>
+              )}
+
+              {/* Summary */}
+              {rescheduleForm.timeStart && (
+                <div className="bg-brand-lime/20 border border-brand-lime rounded-xl p-4">
+                  <p className="text-xs font-bold text-gray-600 uppercase tracking-widest mb-2">New Schedule</p>
+                  <p className="font-black text-brand-navy">{rescheduleForm.courtName?.split('—')[0].trim()}</p>
+                  <p className="text-brand-navy font-semibold">{rescheduleForm.date ? format(new Date(rescheduleForm.date + 'T00:00:00'), 'MMMM d, yyyy') : ''}</p>
+                  <p className="text-gray-600 text-sm">{timeLabel(parseInt(rescheduleForm.timeStart))} – {timeLabel(parseInt(rescheduleForm.timeStart) + rescheduleForm.duration)} · {rescheduleForm.duration}hr{rescheduleForm.duration > 1 ? 's' : ''}</p>
+                  <p className="text-brand-pink font-black text-lg mt-1">₱{(rescheduleModal.pricePerHour * rescheduleForm.duration).toLocaleString()}</p>
+                </div>
+              )}
+
+              <button onClick={submitReschedule} disabled={updating || !rescheduleForm.timeStart}
+                className="w-full bg-brand-pink hover:bg-brand-pink/90 disabled:opacity-40 disabled:cursor-not-allowed text-white font-black py-4 rounded-2xl text-sm transition-colors">
+                {updating ? 'Saving...' : 'Confirm Reschedule'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Detail Modal */}
       {selected && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={() => setSelected(null)}>
@@ -658,8 +817,13 @@ export default function AdminDashboard() {
                   <button onClick={() => cancelBooking(selected.id)} disabled={updating}
                     className="flex-1 bg-red-100 hover:bg-red-500 hover:text-white text-red-600 font-bold py-3 rounded-xl text-sm transition-colors">✕ Cancel</button>
                 )}
+                <button onClick={() => { setSelected(null); openReschedule(selected) }} disabled={updating}
+                  className="w-full flex items-center justify-center gap-2 bg-blue-50 hover:bg-blue-500 hover:text-white text-blue-600 font-bold py-3 rounded-xl text-sm transition-colors">
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                  Reschedule
+                </button>
                 <button onClick={() => deleteBooking(selected.id)} disabled={updating}
-                  className="w-full flex items-center justify-center gap-2 bg-gray-100 hover:bg-red-600 hover:text-white text-gray-500 font-bold py-3 rounded-xl text-sm transition-colors mt-1">
+                  className="w-full flex items-center justify-center gap-2 bg-gray-100 hover:bg-red-600 hover:text-white text-gray-500 font-bold py-3 rounded-xl text-sm transition-colors">
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                   Delete Permanently
                 </button>

@@ -89,6 +89,11 @@ class BookingUpdate(BaseModel):
     status: Optional[str] = None
     gcashReference: Optional[str] = None
     notes: Optional[str] = None
+    date: Optional[str] = None
+    timeStart: Optional[str] = None
+    duration: Optional[int] = None
+    courtId: Optional[str] = None
+    courtName: Optional[str] = None
 
 
 # ── routes ───────────────────────────────────────────────────────────────────
@@ -161,6 +166,33 @@ def update_booking(booking_id: str, body: BookingUpdate, admin: bool = Depends(r
     if body.status is not None: b.status = body.status
     if body.gcashReference is not None: b.gcashReference = body.gcashReference
     if body.notes is not None: b.notes = body.notes
+
+    # Reschedule fields
+    new_date = body.date or b.date
+    new_time = body.timeStart or b.timeStart
+    new_duration = body.duration or b.duration
+    new_court = body.courtId or b.courtId
+
+    if body.date or body.timeStart or body.duration or body.courtId:
+        start_hour = int(new_time.split(":")[0])
+        wanted = set(start_hour + i for i in range(new_duration))
+        for other in db.query(Booking).filter(
+            Booking.courtId == new_court,
+            Booking.date == new_date,
+            Booking.status != "cancelled",
+            Booking.id != booking_id,
+        ).all():
+            o_start = int(other.timeStart.split(":")[0])
+            if wanted & set(o_start + i for i in range(other.duration)):
+                raise HTTPException(status_code=409, detail="That time slot is already booked.")
+        b.date = new_date
+        b.timeStart = new_time
+        b.duration = new_duration
+        b.timeEnd = f"{str(start_hour + new_duration).zfill(2)}:00"
+        b.totalAmount = b.pricePerHour * new_duration
+        if body.courtId: b.courtId = body.courtId
+        if body.courtName: b.courtName = body.courtName
+
     b.updatedAt = datetime.now().isoformat()
     db.commit()
     db.refresh(b)

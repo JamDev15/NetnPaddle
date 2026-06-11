@@ -14,17 +14,38 @@ function fmtTime(t) {
   return `${d}:00 ${ap}`
 }
 
+const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif']
+const MAX_FILE_MB = 10
+
+function validateRef(ref) {
+  const clean = ref.replace(/\s/g, '')
+  if (!clean) return 'Reference number is required'
+  if (!/^\d+$/.test(clean)) return 'Reference number must contain numbers only'
+  if (clean.length < 10) return 'Reference number must be at least 10 digits'
+  return null
+}
+
 export default function Payment() {
   const navigate = useNavigate()
   const [booking, setBooking] = useState(null)
   const [gcashRef, setGcashRef] = useState('')
+  const [refError, setRefError] = useState('')
   const [screenshot, setScreenshot] = useState(null)
   const [preview, setPreview] = useState(null)
+  const [confirmed, setConfirmed] = useState(false)
   const [loading, setLoading] = useState(false)
 
   const handleFileChange = (e) => {
     const file = e.target.files[0]
     if (!file) return
+    if (!ACCEPTED_TYPES.includes(file.type)) {
+      toast.error('Please upload an image file (JPG, PNG, WEBP)')
+      return
+    }
+    if (file.size > MAX_FILE_MB * 1024 * 1024) {
+      toast.error(`File too large. Maximum size is ${MAX_FILE_MB}MB`)
+      return
+    }
     setScreenshot(file)
     setPreview(URL.createObjectURL(file))
   }
@@ -33,6 +54,14 @@ export default function Payment() {
     e.preventDefault()
     const file = e.dataTransfer.files[0]
     if (!file) return
+    if (!ACCEPTED_TYPES.includes(file.type)) {
+      toast.error('Please upload an image file (JPG, PNG, WEBP)')
+      return
+    }
+    if (file.size > MAX_FILE_MB * 1024 * 1024) {
+      toast.error(`File too large. Maximum size is ${MAX_FILE_MB}MB`)
+      return
+    }
     setScreenshot(file)
     setPreview(URL.createObjectURL(file))
   }
@@ -45,7 +74,10 @@ export default function Payment() {
   }, [navigate])
 
   const handleSubmit = async () => {
+    const refErr = validateRef(gcashRef)
+    if (refErr) { setRefError(refErr); return toast.error(refErr) }
     if (!screenshot) return toast.error('Please upload your payment screenshot')
+    if (!confirmed) return toast.error('Please confirm you have paid the correct amount')
     setLoading(true)
     try {
       // Step 1: create booking
@@ -152,14 +184,17 @@ export default function Payment() {
                 {/* Reference Number */}
                 <div className="mb-5">
                   <label className="block text-sm font-bold text-brand-navy mb-2">
-                    Reference Number (optional)
+                    InstaPay Reference Number <span className="text-brand-pink">*</span>
                   </label>
                   <input
                     value={gcashRef}
-                    onChange={(e) => setGcashRef(e.target.value)}
-                    placeholder="e.g. 1234567890123"
-                    className="input-field"
+                    onChange={(e) => { setGcashRef(e.target.value); setRefError('') }}
+                    onBlur={() => { const err = validateRef(gcashRef); setRefError(err || '') }}
+                    placeholder="e.g. 123456789012 (numbers only)"
+                    className={`input-field ${refError ? 'border-red-400 bg-red-50' : ''}`}
                   />
+                  {refError && <p className="text-red-500 text-xs mt-1">{refError}</p>}
+                  <p className="text-gray-400 text-xs mt-1">Found in your bank app after the transfer is complete</p>
                 </div>
 
                 {/* Screenshot Upload */}
@@ -205,10 +240,23 @@ export default function Payment() {
                   </p>
                 </div>
 
+                {/* Confirmation checkbox */}
+                <label className={`flex items-start gap-3 mb-5 p-4 rounded-2xl border-2 cursor-pointer transition-colors ${confirmed ? 'border-brand-lime bg-brand-lime/5' : 'border-gray-200 hover:border-brand-lime/50'}`}>
+                  <input
+                    type="checkbox"
+                    checked={confirmed}
+                    onChange={(e) => setConfirmed(e.target.checked)}
+                    className="mt-0.5 w-5 h-5 accent-brand-pink shrink-0"
+                  />
+                  <span className="text-sm text-gray-700">
+                    I confirm I have transferred <span className="font-black text-brand-pink">₱{booking.totalAmount?.toLocaleString()}</span> to <span className="font-bold text-brand-navy">FELBEN CARLO RIMANDO</span> via GoTyme Bank InstaPay and my screenshot shows the correct amount.
+                  </span>
+                </label>
+
                 {/* Confirm Button */}
                 <button
                   onClick={handleSubmit}
-                  disabled={loading || !screenshot}
+                  disabled={loading || !screenshot || !confirmed || !gcashRef}
                   className="w-full bg-brand-pink hover:bg-brand-pink-dark disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-bold py-4 rounded-2xl transition-colors text-lg shadow-lg"
                 >
                   {loading ? 'Uploading & Confirming...' : 'Confirm Booking & Submit Payment'}

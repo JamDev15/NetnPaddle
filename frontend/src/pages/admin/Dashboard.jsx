@@ -133,7 +133,7 @@ export default function AdminDashboard() {
   }
 
   const cancelBooking = async (id) => {
-    if (!confirm('Cancel this booking?')) return
+    if (!confirm('Delete this booking? It will move to Deleted Bookings.')) return
     setUpdating(true)
     try {
       await api.adminDelete(`/bookings/${id}`)
@@ -536,7 +536,7 @@ export default function AdminDashboard() {
                                   className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 font-semibold px-2.5 py-1.5 rounded-lg transition-colors">View</button>
                                 <button onClick={() => openReschedule(b)} disabled={updating}
                                   className="text-xs bg-blue-100 hover:bg-blue-200 text-blue-700 font-semibold px-2.5 py-1.5 rounded-lg transition-colors">Reschedule</button>
-                                <button onClick={() => deleteBooking(b.id)} disabled={updating} title="Delete permanently"
+                                <button onClick={() => cancelBooking(b.id)} disabled={updating} title="Move to Deleted Bookings"
                                   className="text-xs bg-red-500 hover:bg-red-700 text-white font-semibold px-2.5 py-1.5 rounded-lg transition-colors">
                                   <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                                 </button>
@@ -707,7 +707,7 @@ export default function AdminDashboard() {
                             )}
                             <button onClick={() => setSelected(b)}
                               className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold px-3 py-2 rounded-xl transition-colors">View</button>
-                            <button onClick={() => deleteBooking(b.id)} disabled={updating} title="Delete permanently"
+                            <button onClick={() => cancelBooking(b.id)} disabled={updating} title="Move to Deleted Bookings"
                               className="text-xs bg-red-500 hover:bg-red-700 text-white font-bold px-3 py-2 rounded-xl transition-colors">
                               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                             </button>

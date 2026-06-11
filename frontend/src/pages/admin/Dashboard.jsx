@@ -216,6 +216,11 @@ export default function AdminDashboard() {
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
       </svg>
     )},
+    { id: 'deleted', label: 'Deleted Bookings', icon: (
+      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+      </svg>
+    )},
   ]
 
   return (
@@ -274,7 +279,7 @@ export default function AdminDashboard() {
             </button>
             <div>
               <h1 className="font-black text-brand-navy text-xl">
-                {section === 'dashboard' ? 'Overview' : section === 'pending' ? 'Pending Approvals' : section === 'today' ? "Today's Schedule" : 'All Bookings'}
+                {section === 'dashboard' ? 'Overview' : section === 'pending' ? 'Pending Approvals' : section === 'today' ? "Today's Schedule" : section === 'deleted' ? 'Deleted Bookings' : 'All Bookings'}
               </h1>
               <p className="text-gray-400 text-xs">{format(new Date(), 'EEEE, MMMM d, yyyy')}</p>
             </div>
@@ -715,6 +720,60 @@ export default function AdminDashboard() {
               )}
             </div>
           )}
+
+          {/* ── DELETED BOOKINGS ── */}
+          {section === 'deleted' && (() => {
+            const deletedBookings = bookings.filter(b => b.status === 'cancelled')
+            return (
+              <div className="space-y-4">
+                <div className="bg-red-50 border border-red-200 rounded-2xl p-4 flex items-start gap-3">
+                  <svg className="w-5 h-5 text-red-500 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                  <div>
+                    <p className="font-bold text-red-800 text-sm">Cancelled bookings</p>
+                    <p className="text-red-600 text-xs mt-0.5">These bookings were cancelled. Use the trash button to permanently remove them from the database.</p>
+                  </div>
+                </div>
+
+                {loading ? (
+                  <div className="py-20 text-center text-gray-400">Loading...</div>
+                ) : deletedBookings.length === 0 ? (
+                  <div className="bg-white rounded-2xl py-20 text-center text-gray-400 shadow-sm border border-gray-100">
+                    <svg className="w-14 h-14 mx-auto mb-3 opacity-25" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                    <p className="font-semibold">No cancelled bookings</p>
+                    <p className="text-sm mt-1">Cancelled bookings will appear here.</p>
+                  </div>
+                ) : (
+                  <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div className="px-6 py-4 border-b border-gray-100">
+                      <h2 className="font-bold text-brand-navy">Cancelled Bookings <span className="text-gray-400 font-normal text-sm">({deletedBookings.length})</span></h2>
+                    </div>
+                    <div className="divide-y divide-gray-50">
+                      {deletedBookings.map(b => (
+                        <div key={b.id} className="px-6 py-4 flex items-center gap-4 hover:bg-gray-50">
+                          <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center text-red-400 font-black text-sm shrink-0">
+                            {b.customerName?.[0]?.toUpperCase()}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-semibold text-brand-navy">{b.customerName}</p>
+                            <p className="text-gray-400 text-xs">{b.referenceNumber} · {b.courtName?.split('—')[0].trim()}</p>
+                            <p className="text-gray-400 text-xs">{b.date ? format(new Date(b.date + 'T00:00:00'), 'MMM d, yyyy') : ''} · {fmtTime(b.timeStart)} – {fmtTime(b.timeEnd)}</p>
+                          </div>
+                          <div className="text-right shrink-0">
+                            <p className="font-black text-brand-navy">₱{b.totalAmount?.toLocaleString()}</p>
+                            <p className="text-xs text-gray-400">{b.customerPhone}</p>
+                          </div>
+                          <button onClick={() => deleteBooking(b.id)} disabled={updating} title="Delete permanently"
+                            className="ml-2 p-2 bg-red-100 hover:bg-red-500 hover:text-white text-red-500 rounded-xl transition-colors shrink-0">
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )
+          })()}
 
         </main>
       </div>

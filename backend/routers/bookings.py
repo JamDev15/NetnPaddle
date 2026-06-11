@@ -52,14 +52,26 @@ def booking_to_dict(b: Booking) -> dict:
 
 
 def _save_screenshot(content: bytes, filename: str, mime: str) -> str:
-    """Upload to Google Drive if configured, otherwise save locally."""
-    folder_id = os.environ.get("GOOGLE_DRIVE_FOLDER_ID", "")
-    if folder_id:
+    """Upload to Supabase Storage if configured, otherwise save locally."""
+    supabase_url = os.environ.get("SUPABASE_URL", "")
+    supabase_key = os.environ.get("SUPABASE_SERVICE_KEY", "")
+    if supabase_url and supabase_key:
         try:
-            from drive import upload_screenshot
-            return upload_screenshot(content, filename, mime)
+            import urllib.request
+            req = urllib.request.Request(
+                f"{supabase_url}/storage/v1/object/screenshots/{filename}",
+                data=content,
+                method="POST",
+                headers={
+                    "Authorization": f"Bearer {supabase_key}",
+                    "Content-Type": mime,
+                    "x-upsert": "true",
+                }
+            )
+            urllib.request.urlopen(req)
+            return f"{supabase_url}/storage/v1/object/public/screenshots/{filename}"
         except Exception as e:
-            print(f"Drive upload failed, falling back to local: {e}")
+            print(f"Supabase upload failed, falling back to local: {e}")
 
     filepath = os.path.join(UPLOADS_DIR, filename)
     with open(filepath, "wb") as f:

@@ -347,26 +347,30 @@ export default function Home() {
             <span className="text-brand-pink font-semibold text-sm uppercase tracking-widest">Find Us</span>
             <h2 className="section-title mt-2">Location & Hours</h2>
           </div>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            <div className="rounded-3xl overflow-hidden h-80 shadow-lg border border-gray-200">
-              <iframe
-                title="Net N' Paddle Location"
-                src="https://maps.google.com/maps?q=7.456933,125.812361&z=16&output=embed"
-                width="100%"
-                height="100%"
-                style={{ border: 0 }}
-                allowFullScreen
-                loading="lazy"
-                referrerPolicy="no-referrer-when-downgrade"
-              />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
+            {/* Left — Map */}
+            <div>
+              <div className="rounded-3xl overflow-hidden shadow-lg border border-gray-200" style={{ height: '380px' }}>
+                <iframe
+                  title="Net N' Paddle Location"
+                  src="https://maps.google.com/maps?q=7.456933,125.812361&z=16&output=embed"
+                  width="100%"
+                  height="100%"
+                  style={{ border: 0 }}
+                  allowFullScreen
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                />
+              </div>
+              <a href="https://www.google.com/maps/place/Suaybaguio+District,+10+Mirafuentes+St.,+Tagum,+8100+Davao+del+Norte/@7.4758728,125.8142993,13z"
+                target="_blank" rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 text-brand-pink font-semibold text-sm hover:underline mt-3">
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+                Open in Google Maps
+              </a>
             </div>
-            <a href="https://www.google.com/maps/place/Suaybaguio+District,+10+Mirafuentes+St.,+Tagum,+8100+Davao+del+Norte/@7.4758728,125.8142993,13z"
-              target="_blank" rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 text-brand-pink font-semibold text-sm hover:underline mt-3">
-              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
-              Open in Google Maps
-            </a>
 
+            {/* Right — Info */}
             <div className="space-y-5">
               {[
                 { icon: '📍', title: 'Address', value: '1485 Mirafuentes St., Suaybaguio District' },

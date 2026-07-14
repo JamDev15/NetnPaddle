@@ -769,7 +769,7 @@ export default function AdminDashboard() {
                   <tbody>
                     {Array.from({ length: SCHEDULE_END_HOUR - SCHEDULE_START_HOUR + 1 }, (_, i) => SCHEDULE_START_HOUR + i).map((h) => (
                       <tr key={h} className="border-t border-gray-100">
-                        <td className="bg-brand-navy/90 text-white text-xs font-semibold py-2.5 px-3 whitespace-nowrap sticky left-0">{timeLabel(h)}</td>
+                        <td className="bg-brand-navy/90 text-white text-xs font-semibold py-2.5 px-3 whitespace-nowrap sticky left-0">{timeLabel(h)} – {timeLabel(h + 1)}</td>
                         {courts.map((c) => {
                           const b = scheduleBookingAt(c.id, h)
                           return (

@@ -189,7 +189,7 @@ export default function Booking() {
                     <tbody>
                       {Array.from({ length: END_HOUR - START_HOUR + 1 }, (_, i) => START_HOUR + i).map((h) => (
                         <tr key={h} className="border-t border-gray-100">
-                          <td className="bg-brand-navy/90 text-white text-xs font-semibold py-2 px-3 whitespace-nowrap">{timeLabel(h)}</td>
+                          <td className="bg-brand-navy/90 text-white text-xs font-semibold py-2 px-3 whitespace-nowrap">{timeLabel(h)} – {timeLabel(h + 1)}</td>
                           {courts.map((c) => {
                             const booked = (allCourtsSlots[c.id] || []).includes(h)
                             return (

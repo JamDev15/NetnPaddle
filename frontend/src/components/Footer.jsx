@@ -32,7 +32,7 @@ export default function Footer() {
               {[
                 { label: 'Home', to: '/' },
                 { label: 'Book a Court', to: '/booking' },
-                { label: 'Admin Panel', to: '/admin' },
+                { label: 'Booking Policy', to: '/policy' },
               ].map((l) => (
                 <li key={l.to}>
                   <Link to={l.to} className="text-white/60 hover:text-brand-pink text-sm transition-colors">{l.label}</Link>

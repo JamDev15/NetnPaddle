@@ -40,8 +40,11 @@ export default function AdminDashboard() {
   const [rescheduleForm, setRescheduleForm] = useState({ date: '', timeStart: '', duration: 1, courtId: '', courtName: '' })
   const [courts, setCourts] = useState([])
   const [bookedSlots, setBookedSlots] = useState([])
+  const [scheduleDate, setScheduleDate] = useState(format(new Date(), 'yyyy-MM-dd'))
 
   const today = format(new Date(), 'yyyy-MM-dd')
+  const SCHEDULE_START_HOUR = 6
+  const SCHEDULE_END_HOUR = 22
 
   const fetchBookings = useCallback(async () => {
     try {
@@ -188,6 +191,11 @@ export default function AdminDashboard() {
 
   const pendingBookings = bookings.filter((b) => ['pending', 'pending_cash'].includes(b.status))
 
+  const scheduleBookingAt = (courtId, hour) => bookings.find((b) =>
+    b.courtId === courtId && b.date === scheduleDate && b.status !== 'cancelled' &&
+    hour >= parseInt(b.timeStart) && hour < parseInt(b.timeStart) + b.duration
+  )
+
   const filtered = bookings.filter((b) => {
     const okStatus = filterStatus === 'all' || b.status === filterStatus
     const q = search.toLowerCase()
@@ -214,6 +222,11 @@ export default function AdminDashboard() {
     { id: 'today', label: "Today's Schedule", icon: (
       <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+      </svg>
+    )},
+    { id: 'schedule', label: 'Full Schedule', icon: (
+      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17V7m6 10V7M4 4h16a1 1 0 011 1v14a1 1 0 01-1 1H4a1 1 0 01-1-1V5a1 1 0 011-1z" />
       </svg>
     )},
     { id: 'deleted', label: 'Deleted Bookings', icon: (
@@ -279,7 +292,7 @@ export default function AdminDashboard() {
             </button>
             <div>
               <h1 className="font-black text-brand-navy text-xl">
-                {section === 'dashboard' ? 'Overview' : section === 'pending' ? 'Pending Approvals' : section === 'today' ? "Today's Schedule" : section === 'deleted' ? 'Deleted Bookings' : 'All Bookings'}
+                {section === 'dashboard' ? 'Overview' : section === 'pending' ? 'Pending Approvals' : section === 'today' ? "Today's Schedule" : section === 'schedule' ? 'Full Schedule' : section === 'deleted' ? 'Deleted Bookings' : 'All Bookings'}
               </h1>
               <p className="text-gray-400 text-xs">{format(new Date(), 'EEEE, MMMM d, yyyy')}</p>
             </div>
@@ -718,6 +731,65 @@ export default function AdminDashboard() {
                   ))}
                 </div>
               )}
+            </div>
+          )}
+
+          {/* ── FULL SCHEDULE ── */}
+          {section === 'schedule' && (
+            <div className="space-y-4">
+              <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-center gap-3 flex-wrap">
+                <button onClick={() => setScheduleDate(format(new Date(new Date(scheduleDate + 'T00:00:00').getTime() - 86400000), 'yyyy-MM-dd'))}
+                  className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors">
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+                </button>
+                <input type="date" value={scheduleDate} onChange={(e) => setScheduleDate(e.target.value)}
+                  className="border border-gray-200 rounded-xl px-3 py-2 text-sm font-semibold text-brand-navy" />
+                <button onClick={() => setScheduleDate(format(new Date(new Date(scheduleDate + 'T00:00:00').getTime() + 86400000), 'yyyy-MM-dd'))}
+                  className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors">
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                </button>
+                <button onClick={() => setScheduleDate(today)}
+                  className="text-xs font-bold text-brand-pink hover:underline">Today</button>
+                <div className="ml-auto flex items-center gap-4 text-xs text-gray-500">
+                  <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-red-100 border border-red-200 inline-block" /> Booked</span>
+                  <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-green-100 border border-green-200 inline-block" /> Available</span>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-x-auto">
+                <table className="w-full text-sm border-separate border-spacing-0">
+                  <thead>
+                    <tr>
+                      <th className="bg-brand-navy text-white text-xs font-bold py-2.5 px-3 text-left sticky left-0">Time</th>
+                      {courts.map((c) => (
+                        <th key={c.id} className="bg-brand-navy text-white text-xs font-bold py-2.5 px-3 text-center min-w-[140px]">{c.name}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {Array.from({ length: SCHEDULE_END_HOUR - SCHEDULE_START_HOUR + 1 }, (_, i) => SCHEDULE_START_HOUR + i).map((h) => (
+                      <tr key={h} className="border-t border-gray-100">
+                        <td className="bg-brand-navy/90 text-white text-xs font-semibold py-2.5 px-3 whitespace-nowrap sticky left-0">{timeLabel(h)}</td>
+                        {courts.map((c) => {
+                          const b = scheduleBookingAt(c.id, h)
+                          return (
+                            <td key={c.id} className={`text-center text-xs py-2.5 px-3 ${b ? 'bg-red-50' : 'bg-green-50'}`}>
+                              {b ? (
+                                <button onClick={() => setSelected(b)} className="w-full">
+                                  <p className="font-bold text-red-500">Booked</p>
+                                  <p className="text-red-400 text-[11px] truncate">{b.customerName}</p>
+                                </button>
+                              ) : (
+                                <span className="font-semibold text-green-600">Available</span>
+                              )}
+                            </td>
+                          )
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
 

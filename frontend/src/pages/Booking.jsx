@@ -36,7 +36,9 @@ export default function Booking() {
   const [duration, setDuration] = useState(1)
   const [bookedSlots, setBookedSlots] = useState([])
   const [loadingSlots, setLoadingSlots] = useState(false)
+  const [allCourtsSlots, setAllCourtsSlots] = useState({})
   const [form, setForm] = useState({ customerName: '', customerEmail: '', customerPhone: '', notes: '' })
+  const [agreedToPolicy, setAgreedToPolicy] = useState(false)
 
   useEffect(() => {
     document.title = "Book a Court — Net N' Paddle"
@@ -59,6 +61,16 @@ export default function Booking() {
       .finally(() => setLoadingSlots(false))
   }, [court, date])
 
+  useEffect(() => {
+    if (!courts.length || !date) return
+    const dateStr = format(date, 'yyyy-MM-dd')
+    Promise.all(courts.map((c) =>
+      api.get(`/bookings/availability?courtId=${c.id}&date=${dateStr}`)
+        .then((d) => [c.id, d.bookedSlots || []])
+        .catch(() => [c.id, []])
+    )).then((entries) => setAllCourtsSlots(Object.fromEntries(entries)))
+  }, [courts, date])
+
   const isAvail = (h) => {
     if (h + duration > 23) return false
     for (let i = 0; i < duration; i++) if (bookedSlots.includes(h + i)) return false
@@ -72,6 +84,7 @@ export default function Booking() {
     if (hour === null) return toast.error('Please select a time slot')
     if (!form.customerName.trim()) return toast.error('Please enter your name')
     if (!form.customerPhone.trim()) return toast.error('Please enter your phone number')
+    if (!agreedToPolicy) return toast.error('Please agree to the Court Booking Policy')
 
     const booking = {
       courtId: court.id,
@@ -160,6 +173,37 @@ export default function Booking() {
                   </div>
                 </div>
 
+                <div className="mb-6 overflow-x-auto">
+                  <label className="block text-sm font-semibold text-gray-700 mb-3">
+                    Court Availability — {format(date, 'MMM d, yyyy')}
+                  </label>
+                  <table className="w-full text-sm border-separate border-spacing-0 rounded-xl overflow-hidden border border-gray-200">
+                    <thead>
+                      <tr>
+                        <th className="bg-brand-navy text-white text-xs font-bold py-2 px-3 text-left">Time</th>
+                        {courts.map((c) => (
+                          <th key={c.id} className="bg-brand-navy text-white text-xs font-bold py-2 px-3 text-center">{c.name}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {Array.from({ length: END_HOUR - START_HOUR + 1 }, (_, i) => START_HOUR + i).map((h) => (
+                        <tr key={h} className="border-t border-gray-100">
+                          <td className="bg-brand-navy/90 text-white text-xs font-semibold py-2 px-3 whitespace-nowrap">{timeLabel(h)}</td>
+                          {courts.map((c) => {
+                            const booked = (allCourtsSlots[c.id] || []).includes(h)
+                            return (
+                              <td key={c.id} className={`text-center text-xs font-semibold py-2 px-3 ${booked ? 'bg-red-50 text-red-500' : 'bg-green-50 text-green-600'}`}>
+                                {booked ? 'Booked' : 'Available'}
+                              </td>
+                            )
+                          })}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
                 {court ? (
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-3">
@@ -219,6 +263,18 @@ export default function Booking() {
                       rows={3} className="input-field resize-none" placeholder="Any special requests..." />
                   </div>
                 </div>
+
+                <label className="flex items-start gap-3 mt-6 p-4 bg-gray-50 rounded-xl cursor-pointer">
+                  <input type="checkbox" checked={agreedToPolicy}
+                    onChange={(e) => setAgreedToPolicy(e.target.checked)}
+                    className="mt-0.5 w-4 h-4 accent-brand-pink shrink-0" />
+                  <span className="text-sm text-gray-600">
+                    I have read and agree to the{' '}
+                    <Link to="/policy" target="_blank" className="text-brand-pink font-semibold hover:underline">
+                      Court Booking Policy
+                    </Link>, including the non-cancellable, non-refundable, and weather-related terms.
+                  </span>
+                </label>
               </div>
             </div>
 
@@ -247,7 +303,7 @@ export default function Booking() {
                 </div>
 
                 <button onClick={handleProceed}
-                  disabled={!court || hour === null || !form.customerName || !form.customerPhone}
+                  disabled={!court || hour === null || !form.customerName || !form.customerPhone || !agreedToPolicy}
                   className="w-full mt-6 bg-brand-pink hover:bg-brand-pink-dark disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-bold py-4 rounded-2xl transition-colors text-lg">
                   Proceed to Payment →
                 </button>

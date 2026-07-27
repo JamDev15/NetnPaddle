@@ -9,12 +9,13 @@ import Footer from '../components/Footer'
 import { api } from '../utils/api'
 
 const DURATIONS = [1, 2, 3]
-const START_HOUR = 6
-const END_HOUR = 22
+const START_HOUR = 0
+const END_HOUR = 23
 
 function timeLabel(h) {
-  const ap = h < 12 ? 'AM' : 'PM'
-  const d = h === 0 ? 12 : h > 12 ? h - 12 : h
+  const hh = h % 24
+  const ap = hh < 12 ? 'AM' : 'PM'
+  const d = hh === 0 ? 12 : hh > 12 ? hh - 12 : hh
   return `${d}:00 ${ap}`
 }
 
@@ -39,6 +40,17 @@ export default function Booking() {
   const [allCourtsSlots, setAllCourtsSlots] = useState({})
   const [form, setForm] = useState({ customerName: '', customerEmail: '', customerPhone: '', notes: '' })
   const [agreedToPolicy, setAgreedToPolicy] = useState(false)
+  const [bookingsOpen, setBookingsOpen] = useState(true)
+  const [closedMessage, setClosedMessage] = useState('')
+  const [closedPeriods, setClosedPeriods] = useState([])
+
+  const refreshClosureStatus = () => {
+    api.get('/settings/booking-status').then((data) => {
+      setBookingsOpen(data.bookingsOpen)
+      setClosedMessage(data.closedMessage || '')
+    }).catch(() => {})
+    api.get('/settings/closed-periods').then(setClosedPeriods).catch(() => {})
+  }
 
   useEffect(() => {
     document.title = "Book a Court — Net N' Paddle"
@@ -49,7 +61,48 @@ export default function Booking() {
         if (found) setCourt(found)
       }
     })
+    refreshClosureStatus()
   }, [preselect])
+
+  // Re-check closure status whenever the tab regains focus, so a tab left open
+  // doesn't keep showing stale availability after an admin closes dates elsewhere.
+  useEffect(() => {
+    const onFocus = () => refreshClosureStatus()
+    const onVisibilityChange = () => { if (!document.hidden) onFocus() }
+    window.addEventListener('focus', onFocus)
+    document.addEventListener('visibilitychange', onVisibilityChange)
+    return () => {
+      window.removeEventListener('focus', onFocus)
+      document.removeEventListener('visibilitychange', onVisibilityChange)
+    }
+  }, [])
+
+  const periodsForDate = (dateStr) => closedPeriods.filter((p) => dateStr >= p.startDate && dateStr <= p.endDate)
+
+  // Whole-day closure (no time range set) — blocks the entire date
+  const getDateClosedReason = (dateStr) => {
+    const period = periodsForDate(dateStr).find((p) => !p.startTime || !p.endTime)
+    return period ? (period.reason || 'Closed') : null
+  }
+
+  // Per-hour closure — either a whole-day closure, or a partial closure covering this hour
+  const getHourClosedReason = (dateStr, h) => {
+    for (const p of periodsForDate(dateStr)) {
+      if (!p.startTime || !p.endTime) return p.reason || 'Closed'
+      const startHour = parseInt(p.startTime)
+      const endHour = parseInt(p.endTime)
+      if (h >= startHour && h < endHour) return p.reason || 'Closed'
+    }
+    return null
+  }
+
+  const selectedDateStr = format(date, 'yyyy-MM-dd')
+  const dateClosedReason = getDateClosedReason(selectedDateStr)
+  const effectivelyClosed = !bookingsOpen || !!dateClosedReason
+  const closedBannerMessage = !bookingsOpen ? closedMessage : dateClosedReason
+  const partialClosures = bookingsOpen && !dateClosedReason
+    ? periodsForDate(selectedDateStr).filter((p) => p.startTime && p.endTime)
+    : []
 
   useEffect(() => {
     if (!court || !date) return
@@ -72,14 +125,18 @@ export default function Booking() {
   }, [courts, date])
 
   const isAvail = (h) => {
-    if (h + duration > 23) return false
-    for (let i = 0; i < duration; i++) if (bookedSlots.includes(h + i)) return false
+    if (h + duration > 24) return false
+    for (let i = 0; i < duration; i++) {
+      if (bookedSlots.includes(h + i)) return false
+      if (getHourClosedReason(selectedDateStr, h + i)) return false
+    }
     return true
   }
 
   const total = court ? court.pricePerHour * duration : 0
 
   const handleProceed = () => {
+    if (effectivelyClosed) return toast.error(closedBannerMessage || 'Bookings are temporarily closed')
     if (!court) return toast.error('Please select a court')
     if (hour === null) return toast.error('Please select a time slot')
     if (!form.customerName.trim()) return toast.error('Please enter your name')
@@ -110,6 +167,18 @@ export default function Booking() {
         </div>
 
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+          {!bookingsOpen && (
+            <div className="mb-6 bg-red-50 border-2 border-red-200 rounded-2xl p-5 text-center">
+              <p className="font-black text-red-600 text-lg">Bookings Are Currently Closed</p>
+              <p className="text-red-500 text-sm mt-1">{closedMessage || "We're not accepting new bookings right now. Please check back later."}</p>
+            </div>
+          )}
+          {bookingsOpen && dateClosedReason && (
+            <div className="mb-6 bg-red-50 border-2 border-red-200 rounded-2xl p-5 text-center">
+              <p className="font-black text-red-600 text-lg">{format(date, 'MMMM d, yyyy')} Is Closed</p>
+              <p className="text-red-500 text-sm mt-1">{dateClosedReason}. Please pick a different date.</p>
+            </div>
+          )}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2 space-y-6">
 
@@ -158,7 +227,12 @@ export default function Booking() {
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">Date</label>
                     <DatePicker selected={date} onChange={(d) => { setDate(d); setHour(null) }}
-                      minDate={new Date()} dateFormat="MMMM d, yyyy" />
+                      minDate={new Date()} dateFormat="MMMM d, yyyy"
+                      excludeDateIntervals={closedPeriods.filter((p) => !p.startTime || !p.endTime).map((p) => {
+                        const [sy, sm, sd] = p.startDate.split('-').map(Number)
+                        const [ey, em, ed] = p.endDate.split('-').map(Number)
+                        return { start: new Date(sy, sm - 1, sd), end: new Date(ey, em - 1, ed) }
+                      })} />
                   </div>
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">Duration</label>
@@ -177,6 +251,11 @@ export default function Booking() {
                   <label className="block text-sm font-semibold text-gray-700 mb-3">
                     Court Availability — {format(date, 'MMM d, yyyy')}
                   </label>
+                  {partialClosures.length > 0 && (
+                    <p className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-3">
+                      {partialClosures.map((p) => `${timeLabel(parseInt(p.startTime))} – ${timeLabel(parseInt(p.endTime))}${p.reason ? ` (${p.reason})` : ''}`).join(' · ')} closed on this date.
+                    </p>
+                  )}
                   <table className="w-full text-sm border-separate border-spacing-0 rounded-xl overflow-hidden border border-gray-200">
                     <thead>
                       <tr>
@@ -187,10 +266,19 @@ export default function Booking() {
                       </tr>
                     </thead>
                     <tbody>
-                      {Array.from({ length: END_HOUR - START_HOUR + 1 }, (_, i) => START_HOUR + i).map((h) => (
+                      {Array.from({ length: END_HOUR - START_HOUR + 1 }, (_, i) => START_HOUR + i).map((h) => {
+                        const hourClosed = effectivelyClosed || !!getHourClosedReason(selectedDateStr, h)
+                        return (
                         <tr key={h} className="border-t border-gray-100">
                           <td className="bg-brand-navy/90 text-white text-xs font-semibold py-2 px-3 whitespace-nowrap">{timeLabel(h)} – {timeLabel(h + 1)}</td>
                           {courts.map((c) => {
+                            if (hourClosed) {
+                              return (
+                                <td key={c.id} className="text-center text-xs font-semibold py-2 px-3 bg-gray-100 text-gray-400">
+                                  Closed
+                                </td>
+                              )
+                            }
                             const booked = (allCourtsSlots[c.id] || []).includes(h)
                             return (
                               <td key={c.id} className={`text-center text-xs font-semibold py-2 px-3 ${booked ? 'bg-red-50 text-red-500' : 'bg-green-50 text-green-600'}`}>
@@ -199,7 +287,8 @@ export default function Booking() {
                             )
                           })}
                         </tr>
-                      ))}
+                        )
+                      })}
                     </tbody>
                   </table>
                 </div>
@@ -212,7 +301,7 @@ export default function Booking() {
                     </label>
                     <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
                       {Array.from({ length: END_HOUR - START_HOUR + 1 }, (_, i) => START_HOUR + i).map((h) => {
-                        const avail = isAvail(h)
+                        const avail = isAvail(h) && !effectivelyClosed
                         const sel = hour === h
                         return (
                           <button key={h} disabled={!avail} onClick={() => setHour(h)}
@@ -303,9 +392,9 @@ export default function Booking() {
                 </div>
 
                 <button onClick={handleProceed}
-                  disabled={!court || hour === null || !form.customerName || !form.customerPhone || !agreedToPolicy}
+                  disabled={effectivelyClosed || !court || hour === null || !form.customerName || !form.customerPhone || !agreedToPolicy}
                   className="w-full mt-6 bg-brand-pink hover:bg-brand-pink-dark disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-bold py-4 rounded-2xl transition-colors text-lg">
-                  Proceed to Payment →
+                  {effectivelyClosed ? 'Bookings Closed' : 'Proceed to Payment →'}
                 </button>
 
                 <p className="text-center text-gray-400 text-xs mt-4">🔒 Secure — no payment collected now</p>

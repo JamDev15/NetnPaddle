@@ -6,7 +6,7 @@ import Footer from '../components/Footer'
 
 function fmtTime(t) {
   if (!t) return '—'
-  const h = parseInt(t)
+  const h = parseInt(t) % 24
   const ap = h < 12 ? 'AM' : 'PM'
   const d = h === 0 ? 12 : h > 12 ? h - 12 : h
   return `${d}:00 ${ap}`

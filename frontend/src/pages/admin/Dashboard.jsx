@@ -14,7 +14,7 @@ const STATUS = {
 
 function fmtTime(t) {
   if (!t) return ''
-  const h = parseInt(t)
+  const h = parseInt(t) % 24
   const ap = h < 12 ? 'AM' : 'PM'
   const d = h === 0 ? 12 : h > 12 ? h - 12 : h
   return `${d}:00 ${ap}`
@@ -41,10 +41,20 @@ export default function AdminDashboard() {
   const [courts, setCourts] = useState([])
   const [bookedSlots, setBookedSlots] = useState([])
   const [scheduleDate, setScheduleDate] = useState(format(new Date(), 'yyyy-MM-dd'))
+  const [bookingsOpen, setBookingsOpen] = useState(true)
+  const [closedMessage, setClosedMessage] = useState('')
+  const [closeModalOpen, setCloseModalOpen] = useState(false)
+  const [closeMessageDraft, setCloseMessageDraft] = useState('')
+  const [togglingPlay, setTogglingPlay] = useState(false)
+  const [closedPeriods, setClosedPeriods] = useState([])
+  const [newClosure, setNewClosure] = useState({ startDate: '', endDate: '', reason: '' })
+  const [limitHours, setLimitHours] = useState(false)
+  const [closureHours, setClosureHours] = useState({ startTime: '', endTime: '' })
+  const [savingClosure, setSavingClosure] = useState(false)
 
   const today = format(new Date(), 'yyyy-MM-dd')
-  const SCHEDULE_START_HOUR = 6
-  const SCHEDULE_END_HOUR = 22
+  const SCHEDULE_START_HOUR = 0
+  const SCHEDULE_END_HOUR = 23
 
   const fetchBookings = useCallback(async () => {
     try {
@@ -62,11 +72,78 @@ export default function AdminDashboard() {
     }
   }, [navigate])
 
+  const fetchBookingStatus = useCallback(async () => {
+    try {
+      const data = await api.get('/settings/booking-status')
+      setBookingsOpen(data.bookingsOpen)
+      setClosedMessage(data.closedMessage || '')
+    } catch {}
+  }, [])
+
+  const fetchClosedPeriods = useCallback(async () => {
+    try {
+      setClosedPeriods(await api.get('/settings/closed-periods'))
+    } catch {}
+  }, [])
+
   useEffect(() => {
     document.title = "Admin Dashboard — Net N' Paddle"
     fetchBookings()
     api.get('/courts/').then(setCourts).catch(() => {})
-  }, [fetchBookings])
+    fetchBookingStatus()
+    fetchClosedPeriods()
+  }, [fetchBookings, fetchBookingStatus, fetchClosedPeriods])
+
+  const addClosure = async () => {
+    if (!newClosure.startDate || !newClosure.endDate) return toast.error('Pick a start and end date')
+    if (newClosure.endDate < newClosure.startDate) return toast.error('End date must be on or after start date')
+    if (limitHours && (!closureHours.startTime || !closureHours.endTime)) return toast.error('Pick a start and end time')
+    if (limitHours && closureHours.endTime <= closureHours.startTime) return toast.error('End time must be after start time')
+    setSavingClosure(true)
+    try {
+      await api.adminPost('/settings/closed-periods', {
+        ...newClosure,
+        startTime: limitHours ? closureHours.startTime : null,
+        endTime: limitHours ? closureHours.endTime : null,
+      })
+      toast.success('Closed')
+      setNewClosure({ startDate: '', endDate: '', reason: '' })
+      setClosureHours({ startTime: '', endTime: '' })
+      setLimitHours(false)
+      await fetchClosedPeriods()
+    } catch (e) { toast.error(e.message || 'Failed to close dates') }
+    finally { setSavingClosure(false) }
+  }
+
+  const removeClosure = async (id) => {
+    if (!confirm('Reopen these dates for booking?')) return
+    try {
+      await api.adminDelete(`/settings/closed-periods/${id}`)
+      toast.success('Dates reopened')
+      await fetchClosedPeriods()
+    } catch (e) { toast.error(e.message || 'Failed to reopen dates') }
+  }
+
+  const openPlay = async () => {
+    setTogglingPlay(true)
+    try {
+      await api.adminPut('/settings/booking-status', { bookingsOpen: true })
+      toast.success('Bookings are now open')
+      await fetchBookingStatus()
+    } catch (e) { toast.error(e.message || 'Failed to open bookings') }
+    finally { setTogglingPlay(false) }
+  }
+
+  const confirmClosePlay = async () => {
+    setTogglingPlay(true)
+    try {
+      await api.adminPut('/settings/booking-status', { bookingsOpen: false, closedMessage: closeMessageDraft.trim() })
+      toast.success('Bookings are now closed')
+      await fetchBookingStatus()
+      setCloseModalOpen(false)
+    } catch (e) { toast.error(e.message || 'Failed to close bookings') }
+    finally { setTogglingPlay(false) }
+  }
 
   useEffect(() => {
     if (!rescheduleModal) return
@@ -107,14 +184,15 @@ export default function AdminDashboard() {
   }
 
   function timeLabel(h) {
-    const ap = h < 12 ? 'AM' : 'PM'
-    const d = h === 0 ? 12 : h > 12 ? h - 12 : h
+    const hh = h % 24
+    const ap = hh < 12 ? 'AM' : 'PM'
+    const d = hh === 0 ? 12 : hh > 12 ? hh - 12 : hh
     return `${d}:00 ${ap}`
   }
 
   function slotAvailable(h) {
     const dur = Number(rescheduleForm.duration)
-    if (h + dur > 23) return false
+    if (h + dur > 24) return false
     for (let i = 0; i < dur; i++) if (bookedSlots.includes(h + i)) return false
     return true
   }
@@ -192,7 +270,7 @@ export default function AdminDashboard() {
   const pendingBookings = bookings.filter((b) => ['pending', 'pending_cash'].includes(b.status))
 
   const scheduleBookingAt = (courtId, hour) => bookings.find((b) =>
-    b.courtId === courtId && b.date === scheduleDate && b.status !== 'cancelled' &&
+    b.courtId === courtId && b.date === scheduleDate && !['cancelled', 'completed'].includes(b.status) &&
     hour >= parseInt(b.timeStart) && hour < parseInt(b.timeStart) + b.duration
   )
 
@@ -234,6 +312,12 @@ export default function AdminDashboard() {
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
       </svg>
     )},
+    { id: 'closures', label: 'Closed Dates', icon: (
+      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.5 14.5l5 5m0-5l-5 5" />
+      </svg>
+    ), badge: closedPeriods.length },
   ]
 
   return (
@@ -292,7 +376,7 @@ export default function AdminDashboard() {
             </button>
             <div>
               <h1 className="font-black text-brand-navy text-xl">
-                {section === 'dashboard' ? 'Overview' : section === 'pending' ? 'Pending Approvals' : section === 'today' ? "Today's Schedule" : section === 'schedule' ? 'Full Schedule' : section === 'deleted' ? 'Deleted Bookings' : 'All Bookings'}
+                {section === 'dashboard' ? 'Overview' : section === 'pending' ? 'Pending Approvals' : section === 'today' ? "Today's Schedule" : section === 'schedule' ? 'Full Schedule' : section === 'deleted' ? 'Deleted Bookings' : section === 'closures' ? 'Closed Dates' : 'All Bookings'}
               </h1>
               <p className="text-gray-400 text-xs">{format(new Date(), 'EEEE, MMMM d, yyyy')}</p>
             </div>
@@ -303,11 +387,27 @@ export default function AdminDashboard() {
                 {stats.pending} need review
               </span>
             )}
+            <button
+              onClick={() => { if (bookingsOpen) { setCloseMessageDraft(closedMessage); setCloseModalOpen(true) } else { openPlay() } }}
+              disabled={togglingPlay}
+              title={bookingsOpen ? 'Close play — stop all new bookings' : 'Reopen play — allow bookings again'}
+              className={`flex items-center gap-2 text-xs font-bold px-3 py-1.5 rounded-full transition-colors disabled:opacity-50 ${
+                bookingsOpen ? 'bg-green-100 text-green-700 hover:bg-red-100 hover:text-red-700' : 'bg-red-100 text-red-700 hover:bg-green-100 hover:text-green-700'
+              }`}>
+              <span className={`w-2 h-2 rounded-full ${bookingsOpen ? 'bg-green-500' : 'bg-red-500'}`} />
+              {bookingsOpen ? 'Play Open' : 'Play Closed'}
+            </button>
             <button onClick={fetchBookings} className="p-2 text-gray-400 hover:text-brand-pink hover:bg-pink-50 rounded-xl transition-colors" title="Refresh">
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
             </button>
           </div>
         </header>
+
+        {!bookingsOpen && (
+          <div className="bg-red-50 border-b border-red-200 px-6 py-2 text-center text-red-700 text-sm font-semibold">
+            Play is currently closed to the public — new bookings are blocked on the website.
+          </div>
+        )}
 
         <main className="flex-1 overflow-y-auto p-6">
 
@@ -847,8 +947,145 @@ export default function AdminDashboard() {
             )
           })()}
 
+          {/* ── CLOSED DATES ── */}
+          {section === 'closures' && (
+            <div className="space-y-6">
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                <h2 className="font-bold text-brand-navy mb-1">Close Dates</h2>
+                <p className="text-gray-400 text-sm mb-5">Block a date range so customers can't book any court during it — e.g. closing next week for maintenance or a private event.</p>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Start Date</label>
+                    <input type="date" value={newClosure.startDate}
+                      min={format(new Date(), 'yyyy-MM-dd')}
+                      onChange={(e) => setNewClosure((f) => ({ ...f, startDate: e.target.value }))}
+                      className="input-field w-full" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">End Date</label>
+                    <input type="date" value={newClosure.endDate}
+                      min={newClosure.startDate || format(new Date(), 'yyyy-MM-dd')}
+                      onChange={(e) => setNewClosure((f) => ({ ...f, endDate: e.target.value }))}
+                      className="input-field w-full" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Reason (optional)</label>
+                    <input type="text" value={newClosure.reason} placeholder="e.g. Private event"
+                      onChange={(e) => setNewClosure((f) => ({ ...f, reason: e.target.value }))}
+                      className="input-field w-full" />
+                  </div>
+                </div>
+
+                <label className="flex items-center gap-2 mt-5 cursor-pointer w-fit">
+                  <input type="checkbox" checked={limitHours}
+                    onChange={(e) => setLimitHours(e.target.checked)}
+                    className="w-4 h-4 accent-brand-pink" />
+                  <span className="text-sm font-semibold text-gray-700">Limit to specific hours only</span>
+                </label>
+                <p className="text-gray-400 text-xs mt-1">{limitHours ? 'Only these hours will be blocked, every day in the range above — the rest of each day stays bookable.' : 'The entire day is blocked for every date in the range above.'}</p>
+
+                {limitHours && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+                    <div>
+                      <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">From</label>
+                      <select value={closureHours.startTime}
+                        onChange={(e) => setClosureHours((f) => ({ ...f, startTime: e.target.value }))}
+                        className="input-field w-full">
+                        <option value="">Select time</option>
+                        {Array.from({ length: 24 }, (_, h) => (
+                          <option key={h} value={`${String(h).padStart(2, '0')}:00`}>{timeLabel(h)}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">To</label>
+                      <select value={closureHours.endTime}
+                        onChange={(e) => setClosureHours((f) => ({ ...f, endTime: e.target.value }))}
+                        className="input-field w-full">
+                        <option value="">Select time</option>
+                        {Array.from({ length: 24 }, (_, h) => (
+                          <option key={h} value={`${String(h).padStart(2, '0')}:00`}>{timeLabel(h)}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                )}
+
+                <button onClick={addClosure} disabled={savingClosure}
+                  className="mt-5 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white font-bold py-3 px-6 rounded-xl text-sm transition-colors">
+                  {savingClosure ? 'Closing…' : 'Close These Dates'}
+                </button>
+              </div>
+
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <div className="px-6 py-4 border-b border-gray-100">
+                  <h2 className="font-bold text-brand-navy">Currently Closed <span className="text-gray-400 font-normal text-sm">({closedPeriods.length})</span></h2>
+                </div>
+                {closedPeriods.length === 0 ? (
+                  <div className="py-14 text-center text-gray-400 text-sm">No closed dates — every day is open for booking.</div>
+                ) : (
+                  <div className="divide-y divide-gray-50">
+                    {closedPeriods.map((p) => (
+                      <div key={p.id} className="px-6 py-4 flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center text-red-500 shrink-0">
+                          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-brand-navy text-sm">
+                            {p.startDate === p.endDate
+                              ? format(new Date(p.startDate + 'T00:00:00'), 'MMM d, yyyy')
+                              : `${format(new Date(p.startDate + 'T00:00:00'), 'MMM d, yyyy')} – ${format(new Date(p.endDate + 'T00:00:00'), 'MMM d, yyyy')}`}
+                            {p.startTime && p.endTime && (
+                              <span className="text-gray-400 font-normal"> · {timeLabel(parseInt(p.startTime))} – {timeLabel(parseInt(p.endTime))} daily</span>
+                            )}
+                          </p>
+                          {p.reason && <p className="text-gray-400 text-xs mt-0.5">{p.reason}</p>}
+                        </div>
+                        <button onClick={() => removeClosure(p.id)}
+                          className="text-xs bg-green-100 hover:bg-green-500 hover:text-white text-green-700 font-semibold px-3 py-1.5 rounded-lg transition-colors shrink-0">
+                          Reopen
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
         </main>
       </div>
+
+      {/* Close Play Modal */}
+      {closeModalOpen && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={() => setCloseModalOpen(false)}>
+          <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden" onClick={(e) => e.stopPropagation()}>
+            <div className="p-6">
+              <div className="w-12 h-12 rounded-2xl bg-red-100 text-red-600 flex items-center justify-center mb-4">
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>
+              </div>
+              <h3 className="font-black text-brand-navy text-xl mb-2">Close Play?</h3>
+              <p className="text-gray-500 text-sm mb-5">
+                This immediately blocks all new bookings on the website. Existing bookings are not affected. You can reopen at any time.
+              </p>
+              <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Message shown to customers (optional)</label>
+              <textarea value={closeMessageDraft} onChange={(e) => setCloseMessageDraft(e.target.value)}
+                rows={2} placeholder="e.g. Closed today for a private event"
+                className="input-field w-full resize-none mb-5" />
+              <div className="flex gap-3">
+                <button onClick={() => setCloseModalOpen(false)}
+                  className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold py-3 rounded-xl text-sm transition-colors">
+                  Cancel
+                </button>
+                <button onClick={confirmClosePlay} disabled={togglingPlay}
+                  className="flex-1 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white font-bold py-3 rounded-xl text-sm transition-colors">
+                  {togglingPlay ? 'Closing…' : 'Close Play'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Reschedule Modal */}
       {rescheduleModal && (

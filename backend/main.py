@@ -2,7 +2,7 @@ import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from routers import auth, courts, bookings
+from routers import auth, courts, bookings, settings
 from database import engine
 import models
 
@@ -26,6 +26,7 @@ app.add_middleware(
 app.include_router(auth.router, prefix="/api/auth", tags=["Auth"])
 app.include_router(courts.router, prefix="/api/courts", tags=["Courts"])
 app.include_router(bookings.router, prefix="/api/bookings", tags=["Bookings"])
+app.include_router(settings.router, prefix="/api/settings", tags=["Settings"])
 
 # Serve local screenshots (fallback when Google Drive not configured)
 _base_dir = "/data" if os.path.isdir("/data") else os.path.dirname(__file__)

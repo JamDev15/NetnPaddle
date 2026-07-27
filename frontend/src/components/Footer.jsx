@@ -52,7 +52,7 @@ export default function Footer() {
                 <span className="text-brand-pink">📞</span> 09703778990
               </li>
               <li className="flex items-center gap-2 text-sm text-white/60">
-                <span className="text-brand-pink">🕐</span> Mon–Sun · 6:00 AM – 11:00 PM
+                <span className="text-brand-pink">🕐</span> Mon–Sun · Open 24 Hours
               </li>
             </ul>
           </div>

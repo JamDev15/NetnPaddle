@@ -12,10 +12,14 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from database import get_db
 from models import Booking
+from routers.settings import bookings_are_open, _get_setting, CLOSED_MESSAGE_KEY, hour_closed_reason
 
 router = APIRouter()
 
 ADMIN_TOKEN = "nnp-admin-secure-2026"
+
+# Bookings in these statuses no longer occupy their time slot
+FREED_STATUSES = ("cancelled", "completed")
 
 # uploads fallback (local dev without Drive configured)
 _base_dir = "/data" if os.path.isdir("/data") else os.path.join(os.path.dirname(__file__), "..")
@@ -115,7 +119,7 @@ def get_availability(courtId: str, date: str, db: Session = Depends(get_db)):
     bookings = db.query(Booking).filter(
         Booking.courtId == courtId,
         Booking.date == date,
-        Booking.status != "cancelled"
+        Booking.status.notin_(FREED_STATUSES)
     ).all()
     booked = set()
     for b in bookings:
@@ -132,13 +136,22 @@ def list_bookings(admin: bool = Depends(require_admin), db: Session = Depends(ge
 
 @router.post("/")
 def create_booking(body: BookingCreate, db: Session = Depends(get_db)):
+    if not bookings_are_open(db):
+        message = _get_setting(db, CLOSED_MESSAGE_KEY, "") or "Bookings are temporarily closed. Please check back later."
+        raise HTTPException(status_code=403, detail=message)
+
     start_hour = int(body.timeStart.split(":")[0])
     wanted = set(start_hour + i for i in range(body.duration))
+
+    for h in wanted:
+        closed_reason = hour_closed_reason(db, body.date, h)
+        if closed_reason:
+            raise HTTPException(status_code=403, detail=closed_reason)
 
     for b in db.query(Booking).filter(
         Booking.courtId == body.courtId,
         Booking.date == body.date,
-        Booking.status != "cancelled"
+        Booking.status.notin_(FREED_STATUSES)
     ).all():
         b_start = int(b.timeStart.split(":")[0])
         if wanted & set(b_start + i for i in range(b.duration)):
@@ -191,7 +204,7 @@ def update_booking(booking_id: str, body: BookingUpdate, admin: bool = Depends(r
         for other in db.query(Booking).filter(
             Booking.courtId == new_court,
             Booking.date == new_date,
-            Booking.status != "cancelled",
+            Booking.status.notin_(FREED_STATUSES),
             Booking.id != booking_id,
         ).all():
             o_start = int(other.timeStart.split(":")[0])

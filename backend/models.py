@@ -2,6 +2,25 @@ from sqlalchemy import Column, Integer, String
 from database import Base
 
 
+class Setting(Base):
+    __tablename__ = "settings"
+
+    key   = Column(String, primary_key=True)
+    value = Column(String)
+
+
+class ClosedPeriod(Base):
+    __tablename__ = "closed_periods"
+
+    id        = Column(String, primary_key=True, index=True)
+    startDate = Column(String, index=True)
+    endDate   = Column(String, index=True)
+    startTime = Column(String, nullable=True)  # e.g. "14:00" — null means whole day
+    endTime   = Column(String, nullable=True)  # e.g. "17:00" — exclusive
+    reason    = Column(String, default="")
+    createdAt = Column(String)
+
+
 class Booking(Base):
     __tablename__ = "bookings"
 

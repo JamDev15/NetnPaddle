@@ -46,7 +46,7 @@ function PickleballIcon() {
 
 const STEPS = [
   { n: '01', title: 'Choose Your Court', desc: "Browse 3 outdoor courts and pick the one that fits your game." },
-  { n: '02', title: 'Pick Date & Time', desc: "Select your preferred date and available slot. We're open 6 AM–11 PM every day." },
+  { n: '02', title: 'Pick Date & Time', desc: "Select your preferred date and available slot. We're open 24 hours a day, every day." },
   { n: '03', title: 'Pay & Confirm', desc: "Pay via GoTyme Bank InstaPay and upload your screenshot. Get instant confirmation." },
 ]
 
@@ -75,8 +75,8 @@ export default function Home() {
             </h1>
             <p className="text-2xl md:text-3xl font-bold text-brand-lime mb-6">Just Dink It! 🏓</p>
             <p className="text-white/70 text-lg leading-relaxed mb-10 max-w-lg">
-              Suaybaguio District&apos;s premier pickleball destination. 3 outdoor courts, open daily
-              6 AM–11 PM. Book online in minutes.
+              Suaybaguio District&apos;s premier pickleball destination. 3 outdoor courts, open 24/7.
+              Book online in minutes.
             </p>
             <div className="flex flex-wrap gap-4">
               <Link to="/booking" className="btn-primary text-base py-4 px-10 animate-pulse-pink">Book a Court Now</Link>
@@ -84,7 +84,7 @@ export default function Home() {
             </div>
 
             <div className="flex flex-wrap gap-8 mt-12 pt-12 border-t border-white/10">
-              {[['3', 'Courts'], ['7', 'Days/Week'], ['17hrs', 'Daily'], ['₱250', 'Per Hour']].map(([v, l]) => (
+              {[['3', 'Courts'], ['7', 'Days/Week'], ['24hrs', 'Daily'], ['₱250', 'Per Hour']].map(([v, l]) => (
                 <div key={l}>
                   <p className="text-3xl font-black text-brand-pink">{v}</p>
                   <p className="text-white/60 text-sm">{l}</p>
@@ -125,8 +125,8 @@ export default function Home() {
                 <p className="text-xs">Courts</p>
               </div>
               <div className="absolute -bottom-4 -left-4 bg-white rounded-2xl shadow-xl p-4 text-center">
-                <p className="text-brand-pink text-2xl font-black">6AM</p>
-                <p className="text-brand-navy text-xs font-semibold">Opens Daily</p>
+                <p className="text-brand-pink text-2xl font-black">24/7</p>
+                <p className="text-brand-navy text-xs font-semibold">Open Daily</p>
               </div>
             </div>
           </div>
@@ -159,7 +159,7 @@ export default function Home() {
                   { label: 'Phone', value: '09703778990', icon: (
                     <svg className="w-5 h-5 text-brand-pink" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
                   )},
-                  { label: 'Hours', value: '6 AM – 11 PM', icon: (
+                  { label: 'Hours', value: 'Open 24/7', icon: (
                     <svg className="w-5 h-5 text-brand-pink" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                   )},
                   { label: 'Open', value: 'Mon – Sun', icon: (
@@ -316,7 +316,7 @@ export default function Home() {
               </tbody>
             </table>
           </div>
-          <p className="text-center text-gray-400 text-sm mt-4">Rates apply every day · 6:00 AM – 11:00 PM</p>
+          <p className="text-center text-gray-400 text-sm mt-4">Rates apply every day · Open 24 hours</p>
           <div className="text-center mt-8">
             <Link to="/booking" className="btn-primary">Reserve Your Slot</Link>
           </div>
@@ -387,7 +387,7 @@ export default function Home() {
                 { title: 'Phone', value: '09703778990', icon: (
                   <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
                 )},
-                { title: 'Operating Hours', value: 'Monday – Sunday · 6:00 AM to 11:00 PM', icon: (
+                { title: 'Operating Hours', value: 'Monday – Sunday · Open 24 Hours', icon: (
                   <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                 )},
               ].map((item) => (

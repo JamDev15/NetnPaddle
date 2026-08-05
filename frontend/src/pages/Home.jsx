@@ -3,14 +3,18 @@ import { Link } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 
+// ₱200/hr up to and including the 5-6pm slot, ₱250/hr from 6pm onwards
+const RATE_BEFORE_6PM = 200
+const RATE_FROM_6PM = 250
+
 const COURTS = [
-  { id: 'court-1', name: 'Court 1', type: 'Outdoor', price: 250,
+  { id: 'court-1', name: 'Court 1', type: 'Outdoor',
     features: ['Outdoor court', 'Professional surface', 'Natural lighting', 'Shaded area'],
     grad: 'from-brand-pink to-brand-pink-dark' },
-  { id: 'court-2', name: 'Court 2', type: 'Outdoor', price: 250,
+  { id: 'court-2', name: 'Court 2', type: 'Outdoor',
     features: ['Outdoor court', 'Professional surface', 'Natural lighting', 'Spectator area'],
     grad: 'from-brand-navy to-brand-navy-light' },
-  { id: 'court-3', name: 'Court 3', type: 'Outdoor', price: 250,
+  { id: 'court-3', name: 'Court 3', type: 'Outdoor',
     features: ['Outdoor court', 'Professional surface', 'Natural lighting', 'Parking nearby'],
     grad: 'from-brand-lime-dark to-green-600' },
 ]
@@ -84,7 +88,7 @@ export default function Home() {
             </div>
 
             <div className="flex flex-wrap gap-8 mt-12 pt-12 border-t border-white/10">
-              {[['3', 'Courts'], ['7', 'Days/Week'], ['24hrs', 'Daily'], ['₱250', 'Per Hour']].map(([v, l]) => (
+              {[['3', 'Courts'], ['7', 'Days/Week'], ['24hrs', 'Daily'], [`₱${RATE_BEFORE_6PM}–${RATE_FROM_6PM}`, 'Per Hour']].map(([v, l]) => (
                 <div key={l}>
                   <p className="text-3xl font-black text-brand-pink">{v}</p>
                   <p className="text-white/60 text-sm">{l}</p>
@@ -203,7 +207,7 @@ export default function Home() {
                   )
                 },
                 {
-                  bg: 'bg-brand-navy', text: 'text-white', title: '₱250/hour', sub: 'Flat Rate',
+                  bg: 'bg-brand-navy', text: 'text-white', title: `₱${RATE_BEFORE_6PM}–${RATE_FROM_6PM}/hour`, sub: 'Before / After 6PM',
                   icon: (
                     <svg viewBox="0 0 44 44" className="w-11 h-11">
                       <rect x="8" y="6" width="28" height="32" rx="5" fill="none" stroke="white" strokeWidth="2.5" opacity="0.9"/>
@@ -259,7 +263,7 @@ export default function Home() {
                       <span className="text-xs text-gray-500">{c.type}</span>
                     </div>
                     <div className="text-right">
-                      <p className="text-brand-pink font-black text-xl">₱{c.price}</p>
+                      <p className="text-brand-pink font-black text-xl">₱{RATE_BEFORE_6PM}–{RATE_FROM_6PM}</p>
                       <p className="text-gray-400 text-xs">/hour</p>
                     </div>
                   </div>
@@ -293,7 +297,7 @@ export default function Home() {
             <table className="w-full">
               <thead>
                 <tr className="bg-brand-navy text-white">
-                  {['Court', 'Type', 'Rate/Hour', '2 Hours', '3 Hours'].map((h) => (
+                  {['Court', 'Type', 'Before 6:00 PM', 'From 6:00 PM'].map((h) => (
                     <th key={h} className={`py-4 px-6 font-semibold text-sm ${h === 'Court' || h === 'Type' ? 'text-left' : 'text-center'}`}>{h}</th>
                   ))}
                 </tr>
@@ -308,9 +312,8 @@ export default function Home() {
                         c.type === 'Outdoor' ? 'bg-brand-lime/20 text-brand-lime-dark' : 'bg-brand-pink-light text-brand-pink-dark'
                       }`}>{c.type}</span>
                     </td>
-                    <td className="py-4 px-6 text-center font-black text-brand-pink">₱{c.price}</td>
-                    <td className="py-4 px-6 text-center text-gray-600 font-semibold">₱{c.price * 2}</td>
-                    <td className="py-4 px-6 text-center text-gray-600 font-semibold">₱{c.price * 3}</td>
+                    <td className="py-4 px-6 text-center font-black text-brand-pink">₱{RATE_BEFORE_6PM}/hr</td>
+                    <td className="py-4 px-6 text-center font-black text-brand-pink">₱{RATE_FROM_6PM}/hr</td>
                   </tr>
                 ))}
               </tbody>

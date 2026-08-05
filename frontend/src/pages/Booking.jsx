@@ -12,11 +12,25 @@ const DURATIONS = [1, 2, 3]
 const START_HOUR = 0
 const END_HOUR = 23
 
+// ₱200/hr up to and including the 5-6pm slot, ₱250/hr from 6pm onwards
+const RATE_BEFORE_6PM = 200
+const RATE_FROM_6PM = 250
+
 function timeLabel(h) {
   const hh = h % 24
   const ap = hh < 12 ? 'AM' : 'PM'
   const d = hh === 0 ? 12 : hh > 12 ? hh - 12 : hh
   return `${d}:00 ${ap}`
+}
+
+function hourlyRate(h) {
+  return (h % 24) < 18 ? RATE_BEFORE_6PM : RATE_FROM_6PM
+}
+
+function computeTotal(startHour, duration) {
+  let total = 0
+  for (let i = 0; i < duration; i++) total += hourlyRate(startHour + i)
+  return total
 }
 
 const GRAD = {
@@ -133,7 +147,11 @@ export default function Booking() {
     return true
   }
 
-  const total = court ? court.pricePerHour * duration : 0
+  const total = hour !== null ? computeTotal(hour, duration) : 0
+  const rates = hour !== null ? Array.from({ length: duration }, (_, i) => hourlyRate(hour + i)) : []
+  const rateLabel = rates.length === 0
+    ? (court ? `₱${RATE_BEFORE_6PM}–${RATE_FROM_6PM}/hr` : '—')
+    : (new Set(rates).size === 1 ? `₱${rates[0]}/hr` : `₱${Math.min(...rates)}–${Math.max(...rates)}/hr`)
 
   const handleProceed = () => {
     if (effectivelyClosed) return toast.error(closedBannerMessage || 'Bookings are temporarily closed')
@@ -149,7 +167,7 @@ export default function Booking() {
       date: format(date, 'yyyy-MM-dd'),
       timeStart: `${String(hour).padStart(2, '0')}:00`,
       duration,
-      pricePerHour: court.pricePerHour,
+      pricePerHour: Math.round(total / duration),
       totalAmount: total,
       ...form,
     }
@@ -201,7 +219,7 @@ export default function Booking() {
                             <p className="font-bold text-brand-navy">{c.name}</p>
                             <p className="text-gray-500 text-xs">{c.type}</p>
                           </div>
-                          <p className="text-brand-pink font-black text-lg">₱{c.pricePerHour}<span className="text-xs text-gray-400 font-normal">/hr</span></p>
+                          <p className="text-brand-pink font-black text-lg">₱{RATE_BEFORE_6PM}–{RATE_FROM_6PM}<span className="text-xs text-gray-400 font-normal">/hr</span></p>
                         </div>
                         {court?.id === c.id && (
                           <div className="mt-2 flex items-center gap-1 text-brand-pink text-xs font-semibold">
@@ -295,10 +313,11 @@ export default function Booking() {
 
                 {court ? (
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-3">
+                    <label className="block text-sm font-semibold text-gray-700 mb-1">
                       Available Time Slots
                       {loadingSlots && <span className="text-brand-pink ml-2 text-xs animate-pulse">Loading...</span>}
                     </label>
+                    <p className="text-xs text-gray-400 mb-3">₱{RATE_BEFORE_6PM}/hr until 6:00 PM · ₱{RATE_FROM_6PM}/hr from 6:00 PM onwards</p>
                     <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
                       {Array.from({ length: END_HOUR - START_HOUR + 1 }, (_, i) => START_HOUR + i).map((h) => {
                         const avail = isAvail(h) && !effectivelyClosed
@@ -378,7 +397,7 @@ export default function Booking() {
                     ['Date', format(date, 'MMM d, yyyy')],
                     ['Time', hour !== null ? `${timeLabel(hour)} – ${timeLabel(hour + duration)}` : '—'],
                     ['Duration', `${duration} hour${duration > 1 ? 's' : ''}`],
-                    ['Rate', court ? `₱${court.pricePerHour}/hr` : '—'],
+                    ['Rate', rateLabel],
                   ].map(([l, v]) => (
                     <div key={l} className="flex justify-between">
                       <span className="text-gray-500">{l}</span>
@@ -387,7 +406,7 @@ export default function Booking() {
                   ))}
                   <div className="pt-4 border-t border-gray-100 flex justify-between items-center">
                     <span className="font-bold text-brand-navy">Total</span>
-                    <span className="text-2xl font-black text-brand-pink">₱{total.toLocaleString()}</span>
+                    <span className="text-2xl font-black text-brand-pink">{hour !== null ? `₱${total.toLocaleString()}` : '—'}</span>
                   </div>
                 </div>
 

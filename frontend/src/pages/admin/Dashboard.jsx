@@ -20,6 +20,20 @@ function fmtTime(t) {
   return `${d}:00 ${ap}`
 }
 
+// ₱200/hr up to and including the 5-6pm slot, ₱250/hr from 6pm onwards
+const RATE_BEFORE_6PM = 200
+const RATE_FROM_6PM = 250
+
+function hourlyRate(h) {
+  return (h % 24) < 18 ? RATE_BEFORE_6PM : RATE_FROM_6PM
+}
+
+function computeTotal(startHour, duration) {
+  let total = 0
+  for (let i = 0; i < duration; i++) total += hourlyRate(startHour + i)
+  return total
+}
+
 function StatusBadge({ status }) {
   const s = STATUS[status] || { label: status, cls: 'badge-pending' }
   return <span className={s.cls}>{s.label}</span>
@@ -1175,7 +1189,7 @@ export default function AdminDashboard() {
                   <p className="font-black text-brand-navy">{rescheduleForm.courtName?.split('—')[0].trim()}</p>
                   <p className="text-brand-navy font-semibold">{rescheduleForm.date ? format(new Date(rescheduleForm.date + 'T00:00:00'), 'MMMM d, yyyy') : ''}</p>
                   <p className="text-gray-600 text-sm">{timeLabel(parseInt(rescheduleForm.timeStart))} – {timeLabel(parseInt(rescheduleForm.timeStart) + rescheduleForm.duration)} · {rescheduleForm.duration}hr{rescheduleForm.duration > 1 ? 's' : ''}</p>
-                  <p className="text-brand-pink font-black text-lg mt-1">₱{(rescheduleModal.pricePerHour * rescheduleForm.duration).toLocaleString()}</p>
+                  <p className="text-brand-pink font-black text-lg mt-1">₱{computeTotal(parseInt(rescheduleForm.timeStart), rescheduleForm.duration).toLocaleString()}</p>
                 </div>
               )}
 

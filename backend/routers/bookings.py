@@ -21,6 +21,18 @@ ADMIN_TOKEN = "nnp-admin-secure-2026"
 # Bookings in these statuses no longer occupy their time slot
 FREED_STATUSES = ("cancelled", "completed")
 
+# ₱200/hr up to and including the 5-6pm slot, ₱250/hr from 6pm onwards
+RATE_BEFORE_6PM = 200
+RATE_FROM_6PM = 250
+
+
+def hourly_rate(hour: int) -> int:
+    return RATE_BEFORE_6PM if (hour % 24) < 18 else RATE_FROM_6PM
+
+
+def compute_total(start_hour: int, duration: int) -> int:
+    return sum(hourly_rate(start_hour + i) for i in range(duration))
+
 # uploads fallback (local dev without Drive configured)
 _base_dir = "/data" if os.path.isdir("/data") else os.path.join(os.path.dirname(__file__), "..")
 UPLOADS_DIR = os.path.join(_base_dir, "uploads")
@@ -91,8 +103,6 @@ class BookingCreate(BaseModel):
     date: str
     timeStart: str
     duration: int
-    pricePerHour: int
-    totalAmount: int
     customerName: str
     customerPhone: str
     customerEmail: Optional[str] = ""
@@ -157,13 +167,16 @@ def create_booking(body: BookingCreate, db: Session = Depends(get_db)):
         if wanted & set(b_start + i for i in range(b.duration)):
             raise HTTPException(status_code=409, detail="This time slot is already booked.")
 
+    total_amount = compute_total(start_hour, body.duration)
+    price_per_hour = total_amount // body.duration
+
     booking = Booking(
         id=str(uuid.uuid4()),
         referenceNumber=_gen_ref(),
         courtId=body.courtId, courtName=body.courtName,
         date=body.date, timeStart=body.timeStart,
         timeEnd=f"{str(start_hour + body.duration).zfill(2)}:00",
-        duration=body.duration, pricePerHour=body.pricePerHour, totalAmount=body.totalAmount,
+        duration=body.duration, pricePerHour=price_per_hour, totalAmount=total_amount,
         customerName=body.customerName, customerEmail=body.customerEmail or "",
         customerPhone=body.customerPhone, paymentMethod=body.paymentMethod,
         gcashReference=body.gcashReference or "", notes=body.notes or "",
@@ -214,7 +227,8 @@ def update_booking(booking_id: str, body: BookingUpdate, admin: bool = Depends(r
         b.timeStart = new_time
         b.duration = new_duration
         b.timeEnd = f"{str(start_hour + new_duration).zfill(2)}:00"
-        b.totalAmount = b.pricePerHour * new_duration
+        b.totalAmount = compute_total(start_hour, new_duration)
+        b.pricePerHour = b.totalAmount // new_duration
         if body.courtId: b.courtId = body.courtId
         if body.courtName: b.courtName = body.courtName
 

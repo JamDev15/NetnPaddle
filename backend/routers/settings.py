@@ -75,17 +75,21 @@ def closed_period_to_dict(p: ClosedPeriod) -> dict:
     return {
         "id": p.id, "startDate": p.startDate, "endDate": p.endDate,
         "startTime": p.startTime, "endTime": p.endTime,
+        "courtId": p.courtId,
         "reason": p.reason, "createdAt": p.createdAt,
     }
 
 
-def hour_closed_reason(db: Session, date_str: str, hour: int) -> Optional[str]:
-    """Returns the closure reason if the given hour on date_str is blocked by any closed period, else None."""
+def hour_closed_reason(db: Session, date_str: str, hour: int, court_id: str) -> Optional[str]:
+    """Returns the closure reason if the given hour on date_str is blocked for court_id, else None.
+    A closed period with no courtId set applies to every court."""
     periods = db.query(ClosedPeriod).filter(
         ClosedPeriod.startDate <= date_str,
         ClosedPeriod.endDate >= date_str,
     ).all()
     for p in periods:
+        if p.courtId and p.courtId != court_id:
+            continue
         if p.startTime and p.endTime:
             start_hour = int(p.startTime.split(":")[0])
             end_hour = int(p.endTime.split(":")[0])
@@ -101,6 +105,7 @@ class ClosedPeriodCreate(BaseModel):
     endDate: str
     startTime: Optional[str] = None
     endTime: Optional[str] = None
+    courtId: Optional[str] = None
     reason: Optional[str] = ""
 
 
@@ -120,6 +125,7 @@ def create_closed_period(body: ClosedPeriodCreate, admin: bool = Depends(require
     period = ClosedPeriod(
         id=str(uuid.uuid4()), startDate=body.startDate, endDate=body.endDate,
         startTime=body.startTime or None, endTime=body.endTime or None,
+        courtId=body.courtId or None,
         reason=body.reason or "", createdAt=datetime.now().isoformat(),
     )
     db.add(period)

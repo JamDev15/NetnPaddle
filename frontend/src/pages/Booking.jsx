@@ -93,15 +93,16 @@ export default function Booking() {
 
   const periodsForDate = (dateStr) => closedPeriods.filter((p) => dateStr >= p.startDate && dateStr <= p.endDate)
 
-  // Whole-day closure (no time range set) — blocks the entire date
+  // Whole-day closure covering EVERY court — blocks the entire page
   const getDateClosedReason = (dateStr) => {
-    const period = periodsForDate(dateStr).find((p) => !p.startTime || !p.endTime)
+    const period = periodsForDate(dateStr).find((p) => !p.courtId && (!p.startTime || !p.endTime))
     return period ? (period.reason || 'Closed') : null
   }
 
-  // Per-hour closure — either a whole-day closure, or a partial closure covering this hour
-  const getHourClosedReason = (dateStr, h) => {
+  // Per-hour, per-court closure — a closure with no courtId applies to every court
+  const getHourClosedReason = (dateStr, h, courtId) => {
     for (const p of periodsForDate(dateStr)) {
+      if (p.courtId && p.courtId !== courtId) continue
       if (!p.startTime || !p.endTime) return p.reason || 'Closed'
       const startHour = parseInt(p.startTime)
       const endHour = parseInt(p.endTime)
@@ -114,9 +115,8 @@ export default function Booking() {
   const dateClosedReason = getDateClosedReason(selectedDateStr)
   const effectivelyClosed = !bookingsOpen || !!dateClosedReason
   const closedBannerMessage = !bookingsOpen ? closedMessage : dateClosedReason
-  const partialClosures = bookingsOpen && !dateClosedReason
-    ? periodsForDate(selectedDateStr).filter((p) => p.startTime && p.endTime)
-    : []
+  // Closures that don't block the whole page — court-specific and/or time-limited
+  const partialClosures = bookingsOpen && !dateClosedReason ? periodsForDate(selectedDateStr) : []
 
   useEffect(() => {
     if (!court || !date) return
@@ -142,10 +142,15 @@ export default function Booking() {
     if (h + duration > 24) return false
     for (let i = 0; i < duration; i++) {
       if (bookedSlots.includes(h + i)) return false
-      if (getHourClosedReason(selectedDateStr, h + i)) return false
+      if (court && getHourClosedReason(selectedDateStr, h + i, court.id)) return false
     }
     return true
   }
+
+  // Closure reason (if any) covering the currently selected court + time range
+  const selectedSlotClosedReason = court && hour !== null
+    ? Array.from({ length: duration }, (_, i) => getHourClosedReason(selectedDateStr, hour + i, court.id)).find(Boolean) || null
+    : null
 
   const total = hour !== null ? computeTotal(hour, duration) : 0
   const rates = hour !== null ? Array.from({ length: duration }, (_, i) => hourlyRate(hour + i)) : []
@@ -157,6 +162,7 @@ export default function Booking() {
     if (effectivelyClosed) return toast.error(closedBannerMessage || 'Bookings are temporarily closed')
     if (!court) return toast.error('Please select a court')
     if (hour === null) return toast.error('Please select a time slot')
+    if (selectedSlotClosedReason) return toast.error(selectedSlotClosedReason)
     if (!form.customerName.trim()) return toast.error('Please enter your name')
     if (!form.customerPhone.trim()) return toast.error('Please enter your phone number')
     if (!agreedToPolicy) return toast.error('Please agree to the Court Booking Policy')
@@ -246,7 +252,7 @@ export default function Booking() {
                     <label className="block text-sm font-semibold text-gray-700 mb-2">Date</label>
                     <DatePicker selected={date} onChange={(d) => { setDate(d); setHour(null) }}
                       minDate={new Date()} dateFormat="MMMM d, yyyy"
-                      excludeDateIntervals={closedPeriods.filter((p) => !p.startTime || !p.endTime).map((p) => {
+                      excludeDateIntervals={closedPeriods.filter((p) => !p.courtId && (!p.startTime || !p.endTime)).map((p) => {
                         const [sy, sm, sd] = p.startDate.split('-').map(Number)
                         const [ey, em, ed] = p.endDate.split('-').map(Number)
                         return { start: new Date(sy, sm - 1, sd), end: new Date(ey, em - 1, ed) }
@@ -271,7 +277,11 @@ export default function Booking() {
                   </label>
                   {partialClosures.length > 0 && (
                     <p className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-3">
-                      {partialClosures.map((p) => `${timeLabel(parseInt(p.startTime))} – ${timeLabel(parseInt(p.endTime))}${p.reason ? ` (${p.reason})` : ''}`).join(' · ')} closed on this date.
+                      {partialClosures.map((p) => {
+                        const courtLabel = p.courtId ? (courts.find((c) => c.id === p.courtId)?.name || p.courtId) : 'All courts'
+                        const timeRange = p.startTime && p.endTime ? `${timeLabel(parseInt(p.startTime))} – ${timeLabel(parseInt(p.endTime))}` : 'All day'
+                        return `${courtLabel} — ${timeRange}${p.reason ? ` (${p.reason})` : ''}`
+                      }).join(' · ')} closed on this date.
                     </p>
                   )}
                   <table className="w-full text-sm border-separate border-spacing-0 rounded-xl overflow-hidden border border-gray-200">
@@ -284,12 +294,11 @@ export default function Booking() {
                       </tr>
                     </thead>
                     <tbody>
-                      {Array.from({ length: END_HOUR - START_HOUR + 1 }, (_, i) => START_HOUR + i).map((h) => {
-                        const hourClosed = effectivelyClosed || !!getHourClosedReason(selectedDateStr, h)
-                        return (
+                      {Array.from({ length: END_HOUR - START_HOUR + 1 }, (_, i) => START_HOUR + i).map((h) => (
                         <tr key={h} className="border-t border-gray-100">
                           <td className="bg-brand-navy/90 text-white text-xs font-semibold py-2 px-3 whitespace-nowrap">{timeLabel(h)} – {timeLabel(h + 1)}</td>
                           {courts.map((c) => {
+                            const hourClosed = !bookingsOpen || !!getHourClosedReason(selectedDateStr, h, c.id)
                             if (hourClosed) {
                               return (
                                 <td key={c.id} className="text-center text-xs font-semibold py-2 px-3 bg-gray-100 text-gray-400">
@@ -305,8 +314,7 @@ export default function Booking() {
                             )
                           })}
                         </tr>
-                        )
-                      })}
+                      ))}
                     </tbody>
                   </table>
                 </div>

@@ -2,11 +2,26 @@ import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from sqlalchemy import inspect, text
 from routers import auth, courts, bookings, settings
 from database import engine
 import models
 
 models.Base.metadata.create_all(bind=engine)
+
+# create_all() only creates missing tables — it won't add new columns to a
+# table that already existed from a previous deploy, so new columns need a
+# one-off ALTER TABLE here.
+_MIGRATIONS = [
+    ("closed_periods", "courtId", "VARCHAR"),
+]
+_inspector = inspect(engine)
+for _table, _column, _coltype in _MIGRATIONS:
+    if _table in _inspector.get_table_names():
+        _existing_columns = [c["name"] for c in _inspector.get_columns(_table)]
+        if _column not in _existing_columns:
+            with engine.begin() as _conn:
+                _conn.execute(text(f'ALTER TABLE {_table} ADD COLUMN "{_column}" {_coltype}'))
 
 app = FastAPI(title="Net N' Paddle API", version="2.0.0")
 

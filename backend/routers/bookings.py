@@ -154,7 +154,7 @@ def create_booking(body: BookingCreate, db: Session = Depends(get_db)):
     wanted = set(start_hour + i for i in range(body.duration))
 
     for h in wanted:
-        closed_reason = hour_closed_reason(db, body.date, h)
+        closed_reason = hour_closed_reason(db, body.date, h, body.courtId)
         if closed_reason:
             raise HTTPException(status_code=403, detail=closed_reason)
 

@@ -17,6 +17,7 @@ class ClosedPeriod(Base):
     endDate   = Column(String, index=True)
     startTime = Column(String, nullable=True)  # e.g. "14:00" — null means whole day
     endTime   = Column(String, nullable=True)  # e.g. "17:00" — exclusive
+    courtId   = Column(String, nullable=True)  # null means all courts
     reason    = Column(String, default="")
     createdAt = Column(String)
 

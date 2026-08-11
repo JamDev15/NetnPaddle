@@ -61,7 +61,7 @@ export default function AdminDashboard() {
   const [closeMessageDraft, setCloseMessageDraft] = useState('')
   const [togglingPlay, setTogglingPlay] = useState(false)
   const [closedPeriods, setClosedPeriods] = useState([])
-  const [newClosure, setNewClosure] = useState({ startDate: '', endDate: '', reason: '' })
+  const [newClosure, setNewClosure] = useState({ startDate: '', endDate: '', reason: '', courtId: '' })
   const [limitHours, setLimitHours] = useState(false)
   const [closureHours, setClosureHours] = useState({ startTime: '', endTime: '' })
   const [savingClosure, setSavingClosure] = useState(false)
@@ -121,7 +121,7 @@ export default function AdminDashboard() {
         endTime: limitHours ? closureHours.endTime : null,
       })
       toast.success('Closed')
-      setNewClosure({ startDate: '', endDate: '', reason: '' })
+      setNewClosure({ startDate: '', endDate: '', reason: '', courtId: '' })
       setClosureHours({ startTime: '', endTime: '' })
       setLimitHours(false)
       await fetchClosedPeriods()
@@ -966,7 +966,22 @@ export default function AdminDashboard() {
             <div className="space-y-6">
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
                 <h2 className="font-bold text-brand-navy mb-1">Close Dates</h2>
-                <p className="text-gray-400 text-sm mb-5">Block a date range so customers can't book any court during it — e.g. closing next week for maintenance or a private event.</p>
+                <p className="text-gray-400 text-sm mb-5">Block a date range so customers can't book during it — pick a specific court, or leave it on "All Courts" to close everything.</p>
+                <div className="mb-4">
+                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Court</label>
+                  <div className="flex flex-wrap gap-2">
+                    <button type="button" onClick={() => setNewClosure((f) => ({ ...f, courtId: '' }))}
+                      className={`px-4 py-2 rounded-xl border-2 text-sm font-semibold transition-all ${!newClosure.courtId ? 'border-brand-pink bg-brand-pink text-white' : 'border-gray-200 text-gray-600 hover:border-brand-pink'}`}>
+                      All Courts
+                    </button>
+                    {courts.map((c) => (
+                      <button key={c.id} type="button" onClick={() => setNewClosure((f) => ({ ...f, courtId: c.id }))}
+                        className={`px-4 py-2 rounded-xl border-2 text-sm font-semibold transition-all ${newClosure.courtId === c.id ? 'border-brand-pink bg-brand-pink text-white' : 'border-gray-200 text-gray-600 hover:border-brand-pink'}`}>
+                        {c.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
                     <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Start Date</label>
@@ -1053,7 +1068,12 @@ export default function AdminDashboard() {
                               <span className="text-gray-400 font-normal"> · {timeLabel(parseInt(p.startTime))} – {timeLabel(parseInt(p.endTime))} daily</span>
                             )}
                           </p>
-                          {p.reason && <p className="text-gray-400 text-xs mt-0.5">{p.reason}</p>}
+                          <p className="text-xs mt-0.5">
+                            <span className={`font-semibold ${p.courtId ? 'text-brand-pink' : 'text-gray-500'}`}>
+                              {p.courtId ? (courts.find((c) => c.id === p.courtId)?.name || p.courtId) : 'All Courts'}
+                            </span>
+                            {p.reason && <span className="text-gray-400"> · {p.reason}</span>}
+                          </p>
                         </div>
                         <button onClick={() => removeClosure(p.id)}
                           className="text-xs bg-green-100 hover:bg-green-500 hover:text-white text-green-700 font-semibold px-3 py-1.5 rounded-lg transition-colors shrink-0">
